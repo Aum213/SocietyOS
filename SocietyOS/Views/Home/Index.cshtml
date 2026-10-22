@@ -1,8 +1,379 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@model SocietyOS.Models.HomeViewModel
+@{
+    ViewData["Title"] = "SocietyOS — Modern Community Operating System";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+@section Styles {
+    <link rel="stylesheet" href="~/css/societyos-home.css" asp-append-version="true" />
+    <!-- Google Fonts for authentic Devanagari calligraphy and chalk rendering -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Yatra+One&display=swap" rel="stylesheet">
+}
+
+<div class="home-container">
+    <!-- ====================================================================
+         SECTION A: TOP BAR (Flat identifier, Search trigger, Profile avatar)
+         ==================================================================== -->
+    <header class="top-bar-container" role="banner">
+        <a href="#profileDrawer" id="flatPillBtn" class="flat-pill-btn" title="View Flat & Society Information">
+            <span class="flat-badge-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+            </span>
+            <div>
+                <div class="flat-label">FLAT</div>
+                <div class="flat-value">@Model.FlatNumber</div>
+            </div>
+        </a>
+
+        <button type="button" id="searchTriggerBtn" class="search-trigger-btn" aria-label="Open search dialog">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <span class="search-hint">Search notices, issues...</span>
+        </button>
+
+        <button type="button" id="profileAvatarBtn" class="avatar-btn" aria-label="Open profile panel" title="@Model.ResidentName">
+            @(string.IsNullOrWhiteSpace(Model.ResidentName) ? "R" : Model.ResidentName.Substring(0, 1).ToUpper())
+        </button>
+    </header>
+
+    <!-- ====================================================================
+         SECTION B: DAILY SUVICHAR CHALKBOARD
+         ==================================================================== -->
+    <section class="chalkboard-outer-frame" aria-label="Daily Community Suvichar">
+        <div class="chalkboard-surface">
+            <h2 class="chalkboard-heading">सुविचार</h2>
+            <p class="chalkboard-quote">“@Model.DailyMaxim.HindiQuote”</p>
+            @if (!string.IsNullOrWhiteSpace(Model.DailyMaxim.EnglishMeaning))
+            {
+                <p class="chalkboard-meaning">@Model.DailyMaxim.EnglishMeaning</p>
+            }
+            <p class="chalkboard-source">— @Model.DailyMaxim.Source</p>
+        </div>
+
+        <!-- 3D Chalk Tray matching reference image -->
+        <div class="chalk-tray" aria-hidden="true">
+            <div class="tray-chalk-items">
+                <div class="chalk-piece chalk-white" title="White chalk"></div>
+                <div class="chalk-piece chalk-yellow" title="Yellow chalk"></div>
+            </div>
+            <div class="tray-duster" title="Chalkboard duster"></div>
+        </div>
+    </section>
+
+    <!-- ====================================================================
+         SECTION C: EXPANDABLE QUICK ACTIONS
+         ==================================================================== -->
+    <section class="quick-actions-section" aria-label="Quick Actions">
+        <div class="qa-header">
+            <div class="qa-heading-group">
+                <h3 class="qa-title">Quick Actions</h3>
+                <span class="qa-count-badge">6 Shortcuts</span>
+            </div>
+            <button type="button" id="toggleQuickActionsBtn" class="qa-toggle-btn" aria-expanded="false" aria-controls="expandedActionsWrapper">
+                <span id="qaToggleText">View All</span>
+                <svg id="qaChevron" class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </button>
+        </div>
+
+        <!-- 6 Primary Actions Grid -->
+        <div class="actions-grid">
+            @foreach (var action in Model.PrimaryActions)
+            {
+                <a href="@action.TargetUrl"
+                   class="action-card"
+                   data-planned-feature="@action.IsPlannedFeature.ToString().ToLower()"
+                   data-feature-title="@action.Title"
+                   data-feature-notice="@action.PlannedPhaseNotice">
+
+                    @if (action.ActionCategory == "SOS")
+                    {
+                        <span class="action-badge badge-sos">@action.BadgeText</span>
+                    }
+                    else if (!string.IsNullOrEmpty(action.BadgeText))
+                    {
+                        <span class="action-badge badge-default">@action.BadgeText</span>
+                    }
+
+                    <div class="action-icon-wrap icon-category-@action.ActionCategory">
+                        @if (action.Id == "sos")
+                        {
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg>
+                        }
+                        else if (action.Id == "daily-help")
+                        {
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                            </svg>
+                        }
+                        else if (action.Id == "visitor-pass")
+                        {
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+                                <circle cx="9" cy="10" r="2"></circle>
+                                <line x1="15" y1="8" x2="17" y2="8"></line>
+                                <line x1="15" y1="12" x2="17" y2="12"></line>
+                                <line x1="7" y1="16" x2="17" y2="16"></line>
+                            </svg>
+                        }
+                        else if (action.Id == "report-issue")
+                        {
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+                            </svg>
+                        }
+                        else if (action.Id == "book-amenity")
+                        {
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                        }
+                        else
+                        {
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                            </svg>
+                        }
+                    </div>
+
+                    <div>
+                        <div class="action-title">@action.Title</div>
+                        <div class="action-sub">@action.Subtitle</div>
+                    </div>
+                </a>
+            }
+        </div>
+
+        <!-- Expandable Supplementary Actions Grid -->
+        <div id="expandedActionsWrapper" class="actions-expanded-wrapper">
+            <div class="actions-grid">
+                @foreach (var action in Model.ExpandedActions)
+                {
+                    <a href="@action.TargetUrl"
+                       class="action-card"
+                       data-planned-feature="@action.IsPlannedFeature.ToString().ToLower()"
+                       data-feature-title="@action.Title"
+                       data-feature-notice="@action.PlannedPhaseNotice">
+
+                        @if (!string.IsNullOrEmpty(action.BadgeText))
+                        {
+                            <span class="action-badge badge-default">@action.BadgeText</span>
+                        }
+
+                        <div class="action-icon-wrap icon-category-@action.ActionCategory">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="16"></line>
+                                <line x1="8" y1="12" x2="16" y2="12"></line>
+                            </svg>
+                        </div>
+
+                        <div>
+                            <div class="action-title">@action.Title</div>
+                            <div class="action-sub">@action.Subtitle</div>
+                        </div>
+                    </a>
+                }
+            </div>
+        </div>
+    </section>
+
+    <!-- ====================================================================
+         SECTION E: COMMUNITY UPDATES PREVIEW (Restrained)
+         ==================================================================== -->
+    <section class="updates-section" aria-label="Community Notices Preview">
+        <div class="updates-header">
+            <h3 class="updates-title">Community Updates</h3>
+            <span class="text-muted" style="font-size: 11px;">Sample Preview</span>
+        </div>
+        <div class="updates-list">
+            @foreach (var update in Model.RecentUpdates)
+            {
+                <div class="update-card">
+                    <span class="update-dot @(update.IsUrgent ? "dot-urgent" : "dot-normal")"></span>
+                    <div class="update-content">
+                        <div class="update-meta">
+                            <span class="@(update.IsUrgent ? "badge-tag-urgent" : "badge-tag-normal")">@update.Badge</span>
+                            <span class="update-time">• @update.TimeAgo</span>
+                        </div>
+                        <p class="update-text">@update.Title</p>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
 </div>
+
+<!-- ====================================================================
+     SECTION D: FIVE-ITEM BOTTOM NAVIGATION
+     ==================================================================== -->
+<nav class="bottom-nav-bar" aria-label="Main Navigation">
+    <div class="bottom-nav-inner">
+        <a asp-controller="Home" asp-action="Index" class="nav-item-btn active" aria-current="page">
+            <span class="nav-active-indicator" aria-hidden="true"></span>
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <span>Home</span>
+        </a>
+
+        <a href="#gate" class="nav-item-btn" data-planned-feature="true" data-feature-title="Gate & Visitors" data-feature-notice="Feature A (Smart Visitor Approval) will be built in Task 02.">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <span>Gate</span>
+        </a>
+
+        <a href="#issues" class="nav-item-btn" data-planned-feature="true" data-feature-title="Community Issues" data-feature-notice="Feature B (Issue Reporting, Voting & Comments) will be built in Task 03.">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            <span>Issues</span>
+        </a>
+
+        <a href="#market" class="nav-item-btn" data-planned-feature="true" data-feature-title="Resident Marketplace" data-feature-notice="Community buy/sell and resident listings are planned for later iterations.">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="9" cy="21" r="1"></circle>
+                <circle cx="20" cy="21" r="1"></circle>
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+            </svg>
+            <span>Market</span>
+        </a>
+
+        <a href="#more" class="nav-item-btn" data-planned-feature="true" data-feature-title="More Options" data-feature-notice="Society directory, rules, documents, and admin management will live here.">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="1"></circle>
+                <circle cx="19" cy="12" r="1"></circle>
+                <circle cx="5" cy="12" r="1"></circle>
+            </svg>
+            <span>More</span>
+        </a>
+    </div>
+</nav>
+
+<!-- ====================================================================
+     PROFILE OFFCANVAS DRAWER (Section A)
+     ==================================================================== -->
+<div id="drawerBackdrop" class="sos-modal-overlay" aria-hidden="true"></div>
+<aside id="profileDrawer" class="profile-offcanvas" role="dialog" aria-labelledby="profileDrawerTitle" aria-modal="true">
+    <div style="padding: 18px 20px; border-bottom: 1px solid var(--sos-border); display: flex; align-items: center; justify-content: space-between;">
+        <h4 id="profileDrawerTitle" style="font-size: 16px; font-weight: 700; margin: 0;">Resident Profile</h4>
+        <button type="button" id="closeProfileBtn" class="btn-close" aria-label="Close profile drawer"></button>
+    </div>
+
+    <div style="padding: 20px; flex: 1; overflow-y: auto;">
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 20px;">
+            <div class="avatar-btn" style="width: 52px; height: 52px; font-size: 20px; cursor: default;">
+                @(string.IsNullOrWhiteSpace(Model.ResidentName) ? "R" : Model.ResidentName.Substring(0, 1).ToUpper())
+            </div>
+            <div>
+                <div style="font-weight: 700; font-size: 16px;">@Model.ResidentName</div>
+                <span class="qa-count-badge" style="display: inline-block; margin-top: 2px;">@Model.RoleName</span>
+            </div>
+        </div>
+
+        <div style="background: var(--sos-bg); border-radius: var(--sos-radius-md); padding: 14px; margin-bottom: 20px;">
+            <div style="font-size: 11px; font-weight: 600; color: var(--sos-text-muted); text-transform: uppercase; margin-bottom: 4px;">Assigned Flat</div>
+            <div style="font-weight: 700; font-size: 15px; color: var(--sos-primary);">@Model.FlatNumber — @Model.BuildingName</div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; font-size: 13px;">
+            <div>
+                <span class="text-muted d-block" style="font-size: 11px;">REGISTERED EMAIL</span>
+                <strong>@Model.Email</strong>
+            </div>
+            <div>
+                <span class="text-muted d-block" style="font-size: 11px;">PHONE NUMBER</span>
+                <strong>@Model.PhoneNumber</strong>
+            </div>
+        </div>
+    </div>
+
+    <div style="padding: 16px 20px; border-top: 1px solid var(--sos-border); background: #fbfcfc;">
+        @if (Model.IsAuthenticated)
+        {
+            <form asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })" method="post">
+                <button type="submit" class="btn btn-outline-danger w-100" style="border-radius: var(--sos-radius-full); font-weight: 600;">
+                    Sign Out
+                </button>
+            </form>
+        }
+        else
+        {
+            <a asp-area="Identity" asp-page="/Account/Login" class="btn btn-outline-primary w-100" style="border-radius: var(--sos-radius-full); font-weight: 600;">
+                Sign In to Account
+            </a>
+        }
+    </div>
+</aside>
+
+<!-- ====================================================================
+     SEARCH MODAL (Section A)
+     ==================================================================== -->
+<div id="searchModal" class="sos-modal-overlay" role="dialog" aria-labelledby="searchModalTitle" aria-modal="true">
+    <div class="sos-modal-box">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+            <h5 id="searchModalTitle" style="font-size: 16px; font-weight: 700; margin: 0;">Search SocietyOS</h5>
+            <button type="button" id="closeSearchBtn" class="btn-close" aria-label="Close search"></button>
+        </div>
+        <div class="input-group mb-3">
+            <span class="input-group-text bg-white border-end-0" style="border-radius: var(--sos-radius-full) 0 0 var(--sos-radius-full);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+            </span>
+            <input type="search" id="societySearchInput" class="form-control border-start-0" placeholder="Type notice, issue, or flat number..." style="border-radius: 0 var(--sos-radius-full) var(--sos-radius-full) 0; box-shadow: none;" />
+        </div>
+        <p class="text-muted" style="font-size: 12px; margin: 0;">
+            Search indexing will query live announcements (Task 04) and reported community issues (Task 03).
+        </p>
+    </div>
+</div>
+
+<!-- ====================================================================
+     HONEST FEEDBACK MODAL FOR PLANNED ACTIONS
+     ==================================================================== -->
+<div id="featureModal" class="sos-modal-overlay" role="dialog" aria-labelledby="featureModalTitle" aria-modal="true">
+    <div class="sos-modal-box">
+        <h5 id="featureModalTitle" style="font-weight: 700; margin-bottom: 8px;">Feature Notice</h5>
+        <p id="featureModalNotice" class="text-muted" style="font-size: 14px; line-height: 1.5; margin-bottom: 18px;"></p>
+        <div class="text-end">
+            <button type="button" id="closeFeatureBtn" class="btn btn-sm btn-dark" style="border-radius: var(--sos-radius-full); padding: 6px 16px;">
+                Understood
+            </button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/societyos-home.js" asp-append-version="true"></script>
+
+    <a asp-controller="Visitors" asp-action="Pending" class="nav-item-btn">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        <span>Gate</span>
+    </a>
+}

@@ -1,0 +1,167 @@
+﻿@model SocietyOS.ViewModels.RegisterVisitorViewModel
+@{
+    ViewData["Title"] = "Gate Pass — Register Arriving Visitor";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/societyos-home.css" asp-append-version="true" />
+    <style>
+        .form-card {
+            background: #ffffff;
+            border: 1px solid var(--sos-border);
+            border-radius: var(--sos-radius-lg);
+            padding: 24px;
+            box-shadow: var(--sos-shadow-card);
+        }
+
+        .photo-preview-box {
+            width: 100%;
+            height: 180px;
+            border: 2px dashed #cbd5e1;
+            border-radius: var(--sos-radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8fafc;
+            overflow: hidden;
+            position: relative;
+            margin-top: 8px;
+        }
+
+            .photo-preview-box img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                display: none;
+            }
+    </style>
+}
+
+<div class="home-container" style="max-width: 580px;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <span class="badge bg-success mb-1" style="font-size: 11px;">SECURITY GATE PASS</span>
+            <h2 class="m-0" style="font-size: 22px; font-weight: 700;">Register Visitor</h2>
+        </div>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-sm btn-outline-secondary" style="border-radius: var(--sos-radius-full);">
+            Exit
+        </a>
+    </div>
+
+    <div class="form-card">
+        <form asp-action="Register" method="post" enctype="multipart/form-data">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2" style="font-size: 13px;" role="alert"></div>
+
+            <!-- 1. Visitor Full Name -->
+            <div class="mb-3">
+                <label asp-for="VisitorName" class="form-label fw-bold" style="font-size: 13px;"></label>
+                <input asp-for="VisitorName" class="form-control" placeholder="e.g. Ramesh Patel" style="border-radius: var(--sos-radius-sm);" />
+                <span asp-validation-for="VisitorName" class="text-danger" style="font-size: 12px;"></span>
+            </div>
+
+            <!-- 2. Camera Photo Capture -->
+            <div class="mb-3">
+                <label asp-for="Photo" class="form-label fw-bold" style="font-size: 13px;">Visitor Photo (Camera or File)</label>
+                <!-- capture="environment" invokes rear camera on mobile devices -->
+                <input asp-for="Photo" type="file" class="form-control" accept="image/*" capture="environment" id="photoInput" style="border-radius: var(--sos-radius-sm);" />
+                <span asp-validation-for="Photo" class="text-danger" style="font-size: 12px;"></span>
+
+                <div class="photo-preview-box" id="previewContainer">
+                    <span id="previewPlaceholder" class="text-muted" style="font-size: 13px;">No photo captured yet</span>
+                    <img id="imagePreview" alt="Visitor preview" />
+                </div>
+            </div>
+
+            <!-- 3. Destination Building & Flat -->
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label asp-for="BuildingId" class="form-label fw-bold" style="font-size: 13px;"></label>
+                    <select asp-for="BuildingId" asp-items="Model.Buildings" class="form-select" id="buildingSelect" style="border-radius: var(--sos-radius-sm);"></select>
+                </div>
+                <div class="col-6">
+                    <label asp-for="FlatId" class="form-label fw-bold" style="font-size: 13px;"></label>
+                    <select asp-for="FlatId" asp-items="Model.Flats" class="form-select" id="flatSelect" style="border-radius: var(--sos-radius-sm);"></select>
+                </div>
+            </div>
+
+            <!-- 4. Visit Purpose & Accompanying Persons -->
+            <div class="row g-2 mb-3">
+                <div class="col-7">
+                    <label asp-for="Purpose" class="form-label fw-bold" style="font-size: 13px;"></label>
+                    <select asp-for="Purpose" class="form-select" style="border-radius: var(--sos-radius-sm);">
+                        <option value="Personal/Guest">Guest / Friend / Family</option>
+                        <option value="Delivery">Delivery (Courier/Food)</option>
+                        <option value="Service/Repair">Home Service / Maintenance</option>
+                        <option value="Cab/Ride">Cab Pickup / Drop</option>
+                        <option value="Official">Official / Inspection</option>
+                    </select>
+                </div>
+                <div class="col-5">
+                    <label asp-for="AccompanyingPersons" class="form-label fw-bold" style="font-size: 13px;">+ Guests</label>
+                    <input asp-for="AccompanyingPersons" type="number" min="0" max="20" class="form-control" style="border-radius: var(--sos-radius-sm);" />
+                </div>
+            </div>
+
+            <!-- 5. Additional Note -->
+            <div class="mb-4">
+                <label asp-for="PurposeDetails" class="form-label fw-bold" style="font-size: 13px;"></label>
+                <input asp-for="PurposeDetails" class="form-control" placeholder="e.g. Swiggy delivery, Carpenter" style="border-radius: var(--sos-radius-sm);" />
+            </div>
+
+            <div class="p-2 mb-4 bg-light rounded" style="font-size: 11px; color: var(--sos-text-secondary);">
+                <strong>Privacy Policy Notice:</strong> Visitor photo and records are encrypted and automatically deleted within 48 hours.
+            </div>
+
+            <button type="submit" class="btn btn-success w-100 py-2 fw-bold" style="border-radius: var(--sos-radius-full); background: var(--sos-primary); border-color: var(--sos-primary);">
+                Submit for Resident Approval
+            </button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Photo live preview
+        const photoInput = document.getElementById('photoInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const placeholder = document.getElementById('previewPlaceholder');
+
+        photoInput.addEventListener('change', function () {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                    placeholder.style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Dynamic Flat selector on Building change
+        const buildingSelect = document.getElementById('buildingSelect');
+        const flatSelect = document.getElementById('flatSelect');
+
+        buildingSelect.addEventListener('change', async function () {
+            const buildingId = this.value;
+            flatSelect.innerHTML = '<option value="">Loading flats...</option>';
+
+            try {
+                const response = await fetch(`/Visitors/GetFlatsByBuilding?buildingId=${buildingId}`);
+                const data = await response.json();
+
+                flatSelect.innerHTML = '';
+                data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.text;
+                    flatSelect.appendChild(option);
+                });
+            } catch (err) {
+                flatSelect.innerHTML = '<option value="">Error loading flats</option>';
+            }
+        });
+    </script>
+}

@@ -1,0 +1,203 @@
+﻿@model SocietyOS.ViewModels.ResidentVisitorInboxViewModel
+@{
+    ViewData["Title"] = "Visitor Requests — " + Model.FlatDisplay;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/societyos-home.css" asp-append-version="true" />
+    <style>
+        .inbox-tab-bar {
+            display: flex;
+            gap: 8px;
+            background: #ffffff;
+            padding: 6px;
+            border-radius: var(--sos-radius-full);
+            border: 1px solid var(--sos-border);
+            margin-bottom: 20px;
+        }
+
+        .inbox-tab-item {
+            flex: 1;
+            text-align: center;
+            padding: 8px 12px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--sos-text-secondary);
+            border-radius: var(--sos-radius-full);
+            text-decoration: none;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+            .inbox-tab-item.active {
+                background: var(--sos-primary);
+                color: #ffffff;
+                box-shadow: 0 2px 6px rgba(30, 77, 56, 0.25);
+            }
+
+        .visitor-card {
+            background: #ffffff;
+            border: 1px solid var(--sos-border);
+            border-radius: var(--sos-radius-lg);
+            padding: 16px;
+            box-shadow: var(--sos-shadow-card);
+            margin-bottom: 14px;
+            display: flex;
+            gap: 14px;
+            align-items: center;
+        }
+
+        .visitor-avatar-wrap {
+            width: 72px;
+            height: 72px;
+            border-radius: 14px;
+            overflow: hidden;
+            flex-shrink: 0;
+            background: #f1f5f9;
+            border: 1px solid var(--sos-border);
+        }
+
+        .visitor-avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .decision-actions-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+    </style>
+}
+
+<div class="home-container" style="max-width: 600px;">
+    <!-- Top Header -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <span class="badge bg-success mb-1" style="font-size: 11px;">@Model.BuildingName</span>
+            <h2 class="m-0" style="font-size: 22px; font-weight: 700;">Flat @Model.FlatDisplay Visitors</h2>
+        </div>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-sm btn-outline-secondary" style="border-radius: var(--sos-radius-full);">
+            Home
+        </a>
+    </div>
+
+    <!-- Feedback Alerts -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success py-2 px-3 mb-3" style="font-size: 13px;" role="alert">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+    @if (TempData["WarningMessage"] != null)
+    {
+        <div class="alert alert-warning py-2 px-3 mb-3" style="font-size: 13px;" role="alert">
+            @TempData["WarningMessage"]
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger py-2 px-3 mb-3" style="font-size: 13px;" role="alert">
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+    <!-- Tab Navigation -->
+    <nav class="inbox-tab-bar" aria-label="Visitor request status tabs">
+        <a asp-action="Pending" class="inbox-tab-item @(Model.ActiveTab == "Pending" ? "active" : "")">
+            Pending
+            @if (Model.PendingCount > 0)
+            {
+                <span class="badge @(Model.ActiveTab == "Pending" ? "bg-white text-dark" : "bg-danger text-white")" style="font-size: 10px;">
+                    @Model.PendingCount
+                </span>
+            }
+        </a>
+        <a asp-action="Approved" class="inbox-tab-item @(Model.ActiveTab == "Approved" ? "active" : "")">
+            Approved (@Model.ApprovedCount)
+        </a>
+        <a asp-action="Rejected" class="inbox-tab-item @(Model.ActiveTab == "Rejected" ? "active" : "")">
+            Rejected (@Model.RejectedCount)
+        </a>
+    </nav>
+
+    <!-- Request Cards List -->
+    @if (!Model.Requests.Any())
+    {
+        <div class="text-center py-5 bg-white rounded-3 border" style="padding: 40px 20px;">
+            <div style="font-size: 36px; margin-bottom: 8px;">🚪</div>
+            <h5 class="fw-bold mb-1">No @Model.ActiveTab Visitors</h5>
+            <p class="text-muted" style="font-size: 13px; margin: 0;">
+                @(Model.ActiveTab == "Pending" ? "There are no incoming guests awaiting entry at the gate." : $"No {Model.ActiveTab.ToLower()} visitor records found within the 48-hour window.")
+            </p>
+        </div>
+    }
+    else
+    {
+        @foreach (var item in Model.Requests)
+        {
+            <div class="visitor-card">
+                <!-- Streamed photo endpoint with verified authorization -->
+                <div class="visitor-avatar-wrap">
+                    <img src="@Url.Action("Photo", "Visitors", new { id = item.Id })" class="visitor-avatar-img" alt="Visitor @item.VisitorName" loading="lazy" />
+                </div>
+
+                <div class="flex-grow-1" style="min-width: 0;">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <h4 class="m-0 text-truncate fw-bold" style="font-size: 15px; color: var(--sos-primary);">
+                            @item.VisitorName
+                        </h4>
+                        <span class="badge @(item.Status == SocietyOS.Models.VisitorStatus.Pending ? "bg-warning text-dark" : item.Status == SocietyOS.Models.VisitorStatus.Approved ? "bg-success" : "bg-danger")" style="font-size: 10px;">
+                            @item.Status
+                        </span>
+                    </div>
+
+                    <div style="font-size: 12px; color: var(--sos-text-secondary); margin-bottom: 2px;">
+                        <strong>@item.Purpose</strong> @(item.AccompanyingPersons > 0 ? $"(+{item.AccompanyingPersons} accompanying)" : "")
+                    </div>
+
+                    <div style="font-size: 11px; color: var(--sos-text-muted);">
+                        Arrived: @item.CreatedAtUtc.ToString("dd MMM, HH:mm") UTC
+                    </div>
+
+                    @if (item.Status == SocietyOS.Models.VisitorStatus.Pending)
+                    {
+                        <div class="decision-actions-row">
+                            <form asp-action="Decide" method="post" class="d-inline flex-grow-1">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="RequestId" value="@item.Id" />
+                                <input type="hidden" name="Decision" value="Approve" />
+                                <button type="submit" class="btn btn-sm btn-success w-100 fw-bold" style="border-radius: var(--sos-radius-full); font-size: 12px;">
+                                    Approve Entry
+                                </button>
+                            </form>
+
+                            <form asp-action="Decide" method="post" class="d-inline flex-grow-1">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="RequestId" value="@item.Id" />
+                                <input type="hidden" name="Decision" value="Reject" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger w-100 fw-bold" style="border-radius: var(--sos-radius-full); font-size: 12px;">
+                                    Deny
+                                </button>
+                            </form>
+
+                            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-light border px-2" style="border-radius: var(--sos-radius-full);" title="Details">
+                                ℹ️
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div style="font-size: 11px; color: var(--sos-text-muted); margin-top: 6px;">
+                            Decided @item.DecisionAtUtc?.ToString("dd MMM, HH:mm") UTC @(string.IsNullOrEmpty(item.DecidedBy) ? "" : $"by {item.DecidedBy}")
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>
