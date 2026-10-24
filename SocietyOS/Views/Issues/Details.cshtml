@@ -1,0 +1,222 @@
+﻿@model SocietyOS.ViewModels.IssueDetailsViewModel
+@using SocietyOS.Models
+@{
+    ViewData["Title"] = Model.Title;
+    var currentUrl = Context.Request.Path;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/societyos-home.css" asp-append-version="true" />
+    <style>
+        .status-badge-Reported { background: #fef3c7; color: #92400e; }
+        .status-badge-Verified { background: #e0f2fe; color: #075985; }
+        .status-badge-InProgress { background: #ede9fe; color: #5b21b6; }
+        .status-badge-Resolved { background: #dcfce7; color: #166534; }
+    </style>
+}
+
+<div class="home-container" style="max-width: 640px;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary" style="border-radius: var(--sos-radius-full);">
+            ← Back to Feed
+        </a>
+        @if (Model.IsAdmin)
+        {
+            <a asp-action="Admin" class="btn btn-sm btn-dark" style="border-radius: var(--sos-radius-full);">
+                Admin Queue
+            </a>
+        }
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success py-2 px-3 mb-3" style="font-size: 13px;">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["WarningMessage"] != null)
+    {
+        <div class="alert alert-warning py-2 px-3 mb-3" style="font-size: 13px;">@TempData["WarningMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger py-2 px-3 mb-3" style="font-size: 13px;">@TempData["ErrorMessage"]</div>
+    }
+
+    <!-- Main Issue Card -->
+    <div class="bg-white border rounded-4 p-4 shadow-sm mb-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+            <div class="d-flex gap-2 align-items-center">
+                <span class="badge rounded-pill status-badge-@Model.Status px-3 py-1" style="font-size: 12px;">
+                    @Model.Status
+                </span>
+                <span class="badge bg-light text-secondary border" style="font-size: 12px;">
+                    @Model.Category
+                </span>
+            </div>
+            <small class="text-muted" style="font-size: 12px;">
+                Reported @Model.CreatedAtUtc.ToString("dd MMM yyyy, HH:mm") UTC
+            </small>
+        </div>
+
+        <h1 class="h4 fw-bold mb-2">@Model.Title</h1>
+
+        <div class="text-muted mb-3" style="font-size: 12px;">
+            <span>📍 @Model.PrivacySafeLocation</span>
+            <span class="mx-1">•</span>
+            <span>Reported by Resident</span>
+        </div>
+
+        <p style="font-size: 14px; line-height: 1.6; white-space: pre-line;">@Model.Description</p>
+
+        @if (Model.HasPhoto)
+        {
+            <div class="my-3 rounded-3 overflow-hidden border bg-dark text-center" style="max-height: 340px;">
+                <img src="@Url.Action("Photo", "Issues", new { id = Model.Id })"
+                     style="max-width: 100%; max-height: 340px; object-fit: contain;"
+                     alt="Attached evidence for @Model.Title" />
+            </div>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(Model.ResolutionSummary))
+        {
+            <div class="p-3 rounded-3 mt-3" style="background: #eef8f2; border: 1px solid #bbf7d0;">
+                <div class="fw-bold text-success mb-1" style="font-size: 12px; text-transform: uppercase;">
+                    ✓ Official Resolution Summary @(Model.ResolvedAtUtc.HasValue ? $"({Model.ResolvedAtUtc.Value:dd MMM yyyy})" : "")
+                </div>
+                <p class="m-0" style="font-size: 13px; color: #166534;">@Model.ResolutionSummary</p>
+            </div>
+        }
+
+        <!-- Community Voting Bar -->
+        <div class="d-flex align-items-center justify-content-between pt-3 border-top mt-3">
+            <span class="text-muted fw-semibold" style="font-size: 12px;">
+                Does this affect you? Vote to prioritize:
+            </span>
+            <div class="d-flex align-items-center gap-2">
+                <form asp-action="Vote" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="IssueId" value="@Model.Id" />
+                    <input type="hidden" name="VoteValue" value="1" />
+                    <input type="hidden" name="ReturnUrl" value="@currentUrl" />
+                    <button type="submit" class="btn btn-sm @(Model.CurrentUserVote == 1 ? "btn-success" : "btn-outline-success") rounded-pill px-3 fw-bold">
+                        ▲ Upvote (@Model.Upvotes)
+                    </button>
+                </form>
+
+                <form asp-action="Vote" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="IssueId" value="@Model.Id" />
+                    <input type="hidden" name="VoteValue" value="-1" />
+                    <input type="hidden" name="ReturnUrl" value="@currentUrl" />
+                    <button type="submit" class="btn btn-sm @(Model.CurrentUserVote == -1 ? "btn-danger" : "btn-outline-danger") rounded-pill px-3 fw-bold">
+                        ▼ (@Model.Downvotes)
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Administrator-Only Management Panel (Strictly Guarded on Server & View) -->
+    @if (Model.IsAdmin)
+    {
+        <section class="bg-white border border-dark rounded-4 p-4 shadow-sm mb-3" aria-label="Administrator Issue Management">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge bg-dark">ADMINISTRATION ONLY — CONFIDENTIAL</span>
+                <small class="text-muted" style="font-size: 11px;">Hidden from residents</small>
+            </div>
+
+            <div class="p-2 bg-light rounded-3 mb-3" style="font-size: 12px;">
+                <strong>Internal Reporter Identity:</strong> @Model.InternalReporterName (@Model.InternalReporterEmail) — Flat <strong>@Model.InternalReporterFlat</strong>
+            </div>
+
+            <form asp-action="UpdateStatus" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="IssueId" value="@Model.Id" />
+
+                <div class="row g-2 mb-2">
+                    <div class="col-sm-5">
+                        <label class="form-label fw-bold" style="font-size: 12px;">Transition Status</label>
+                        <select name="NewStatus" class="form-select form-select-sm">
+                            @foreach (var st in Enum.GetValues<IssueStatus>())
+                            {
+                                <option value="@st" selected="@(Model.Status == st)">@st</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-sm-7">
+                        <label class="form-label fw-bold" style="font-size: 12px;">Public Resolution Summary (Resident-Visible)</label>
+                        <input type="text" name="ResolutionSummary" value="@Model.ResolutionSummary" class="form-control form-control-sm" placeholder="e.g. Technician replaced fuse on 24 Oct" />
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold" style="font-size: 12px;">Internal Management Note (Admin-Only Audit)</label>
+                    <input type="text" name="InternalManagementNote" class="form-control form-control-sm" placeholder="e.g. Assigned to vendor Ramesh Electricals, ticket #402" />
+                </div>
+
+                <button type="submit" class="btn btn-sm btn-dark rounded-pill px-4 fw-bold">
+                    Save Status & Audit Entry
+                </button>
+            </form>
+
+            @if (Model.StatusHistory.Any())
+            {
+                <div class="mt-3 pt-3 border-top">
+                    <h6 class="fw-bold mb-2" style="font-size: 12px;">Internal Status Audit Log</h6>
+                    @foreach (var log in Model.StatusHistory)
+                    {
+                        <div class="border-bottom py-1" style="font-size: 11px;">
+                            <strong>@log.PreviousStatus → @log.NewStatus</strong> by @log.AdminName on @log.ChangedAtUtc.ToString("dd MMM, HH:mm") UTC
+                            @if (!string.IsNullOrEmpty(log.InternalManagementNote))
+                            {
+                                <div class="text-muted">Note: @log.InternalManagementNote</div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </section>
+    }
+
+    <!-- Community Comments Section -->
+    <section class="bg-white border rounded-4 p-4 shadow-sm mb-4" aria-label="Community Comments">
+        <h5 class="fw-bold mb-3" style="font-size: 16px;">Community Discussion (@Model.Comments.Count)</h5>
+
+        <form asp-action="AddComment" method="post" class="mb-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="IssueId" value="@Model.Id" />
+            <div class="mb-2">
+                <label for="commentBox" class="visually-hidden">Add a comment</label>
+                <textarea id="commentBox" name="CommentText" rows="2" maxlength="1000" required class="form-control" placeholder="Share an update or helpful detail (posted anonymously as Resident)..."></textarea>
+            </div>
+            <div class="text-end">
+                <button type="submit" class="btn btn-sm btn-success rounded-pill px-4 fw-bold" style="background: var(--sos-primary);">
+                    Post Comment
+                </button>
+            </div>
+        </form>
+
+        @if (!Model.Comments.Any())
+        {
+            <p class="text-muted text-center my-3" style="font-size: 13px;">No comments yet. Start the discussion above.</p>
+        }
+        else
+        {
+            <div class="d-flex flex-column gap-2">
+                @foreach (var c in Model.Comments)
+                {
+                    <div class="p-3 rounded-3 @(c.IsAdminComment ? "border border-success" : "bg-light")" style="font-size: 13px;">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold @(c.IsAdminComment ? "text-success" : "")" style="font-size: 12px;">
+                                @c.AuthorLabel
+                            </span>
+                            <small class="text-muted" style="font-size: 11px;">
+                                @c.CreatedAtUtc.ToString("dd MMM, HH:mm") UTC
+                            </small>
+                        </div>
+                        <p class="m-0" style="white-space: pre-line;">@c.CommentText</p>
+                    </div>
+                }
+            </div>
+        }
+    </section>
+</div>

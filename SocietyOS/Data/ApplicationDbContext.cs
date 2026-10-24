@@ -16,6 +16,10 @@ namespace SocietyOS.Data
         public DbSet<ResidentProfile> ResidentProfiles => Set<ResidentProfile>();
         public DbSet<SecurityGuard> SecurityGuards => Set<SecurityGuard>();
         public DbSet<VisitorRequest> VisitorRequests => Set<VisitorRequest>();
+        public DbSet<CommunityIssue> CommunityIssues => Set<CommunityIssue>();
+        public DbSet<IssueVote> IssueVotes => Set<IssueVote>();
+        public DbSet<IssueComment> IssueComments => Set<IssueComment>();
+        public DbSet<IssueStatusHistory> IssueStatusHistories => Set<IssueStatusHistory>();
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -78,6 +82,77 @@ namespace SocietyOS.Data
                 entity.HasOne(v => v.DecisionByResident)
                       .WithMany()
                       .HasForeignKey(v => v.DecisionByResidentId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+            // CommunityIssue relationships and feed indexes
+            builder.Entity<CommunityIssue>(entity =>
+            {
+                entity.HasIndex(i => i.Status);
+                entity.HasIndex(i => i.Category);
+                entity.HasIndex(i => i.CreatedAtUtc);
+                entity.HasIndex(i => new { i.Status, i.Category });
+
+                entity.HasOne(i => i.ReporterUser)
+                      .WithMany()
+                      .HasForeignKey(i => i.ReporterUserId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(i => i.Building)
+                      .WithMany()
+                      .HasForeignKey(i => i.BuildingId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(i => i.Flat)
+                      .WithMany()
+                      .HasForeignKey(i => i.FlatId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // IssueVote composite uniqueness rule: 1 vote per resident per issue
+            builder.Entity<IssueVote>(entity =>
+            {
+                entity.HasIndex(v => new { v.IssueId, v.VoterUserId }).IsUnique();
+
+                entity.HasOne(v => v.Issue)
+                      .WithMany(i => i.Votes)
+                      .HasForeignKey(v => v.IssueId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(v => v.VoterUser)
+                      .WithMany()
+                      .HasForeignKey(v => v.VoterUserId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // IssueComment relationships
+            builder.Entity<IssueComment>(entity =>
+            {
+                entity.HasIndex(c => c.IssueId);
+
+                entity.HasOne(c => c.Issue)
+                      .WithMany(i => i.Comments)
+                      .HasForeignKey(c => c.IssueId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(c => c.AuthorUser)
+                      .WithMany()
+                      .HasForeignKey(c => c.AuthorUserId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // IssueStatusHistory audit relationships
+            builder.Entity<IssueStatusHistory>(entity =>
+            {
+                entity.HasIndex(h => h.IssueId);
+
+                entity.HasOne(h => h.Issue)
+                      .WithMany(i => i.StatusHistory)
+                      .HasForeignKey(h => h.IssueId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(h => h.ChangedByAdmin)
+                      .WithMany()
+                      .HasForeignKey(h => h.ChangedByAdminId)
                       .OnDelete(DeleteBehavior.Restrict);
             });
         }

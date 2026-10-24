@@ -1,0 +1,84 @@
+﻿@model SocietyOS.ViewModels.IssueFeedViewModel
+@using SocietyOS.Models
+@{
+    ViewData["Title"] = "Admin Issue Management";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/societyos-home.css" asp-append-version="true" />
+}
+
+<div class="home-container" style="max-width: 780px;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <span class="badge bg-dark mb-1" style="font-size: 10px;">ADMINISTRATION PORTAL</span>
+            <h2 class="m-0 fw-bold" style="font-size: 22px;">Issue Triage & Resolution</h2>
+        </div>
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill">
+            Resident View
+        </a>
+    </div>
+
+    <form method="get" asp-action="Admin" class="bg-white border rounded-4 p-3 mb-3 shadow-sm">
+        <div class="row g-2">
+            <div class="col-12 col-sm-4">
+                <input type="search" name="q" value="@Model.SearchQuery" class="form-control form-control-sm" placeholder="Search title or description..." />
+            </div>
+            <div class="col-6 col-sm-3">
+                <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">All Statuses</option>
+                    @foreach (var st in Enum.GetValues<IssueStatus>())
+                    {
+                        <option value="@st" selected="@(Model.SelectedStatus == st)">@st</option>
+                    }
+                </select>
+            </div>
+            <div class="col-6 col-sm-3">
+                <select name="category" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">All Categories</option>
+                    @foreach (var cat in Enum.GetValues<IssueCategory>())
+                    {
+                        <option value="@cat" selected="@(Model.SelectedCategory == cat)">@cat</option>
+                    }
+                </select>
+            </div>
+            <div class="col-12 col-sm-2">
+                <button type="submit" class="btn btn-sm btn-dark w-100">Filter</button>
+            </div>
+        </div>
+    </form>
+
+    @if (!Model.Issues.Any())
+    {
+        <div class="text-center bg-white border rounded-4 p-5">
+            <h5 class="fw-bold mb-1">Queue Clear</h5>
+            <p class="text-muted m-0" style="font-size: 13px;">No issues match your current triage filters.</p>
+        </div>
+    }
+    else
+    {
+        @foreach (var item in Model.Issues)
+        {
+            <div class="bg-white border rounded-4 p-3 mb-2 shadow-sm d-flex justify-content-between align-items-center gap-3">
+                <div style="min-width: 0; flex: 1;">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <span class="badge bg-secondary" style="font-size: 10px;">@item.Status</span>
+                        <span class="badge bg-light text-dark border" style="font-size: 10px;">@item.Category</span>
+                        <span class="fw-bold text-success" style="font-size: 12px;">Net Votes: @(item.NetVotes >= 0 ? $"+{item.NetVotes}" : item.NetVotes.ToString())</span>
+                    </div>
+                    <h4 class="h6 fw-bold text-truncate mb-1">@item.Title</h4>
+                    <div class="text-muted" style="font-size: 11px;">
+                        <span>Reporter: <strong>@item.AdminReporterName (@item.AdminReporterFlat)</strong></span>
+                        <span class="mx-1">•</span>
+                        <span>@item.PrivacySafeLocation</span>
+                        <span class="mx-1">•</span>
+                        <span>@item.CreatedAtUtc.ToString("dd MMM HH:mm")</span>
+                    </div>
+                </div>
+                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-dark rounded-pill px-3 fw-semibold">
+                    Manage →
+                </a>
+            </div>
+        }
+    }
+</div>

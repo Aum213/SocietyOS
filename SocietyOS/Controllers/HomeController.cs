@@ -71,12 +71,11 @@ namespace SocietyOS.Controllers
                     {
                         Id = "report-issue",
                         Title = "Report Issue",
-                        Subtitle = "Feature B Workflow",
-                        BadgeText = "Task 03",
+                        Subtitle = "Community Problems & Votes",
+                        BadgeText = "Active",
                         ActionCategory = "Community",
                         TargetUrl = "/Issues",
-                        IsPlannedFeature = true,
-                        PlannedPhaseNotice = "Feature B (Anonymous Issue Reporting & Voting) is scheduled for Task 03."
+                        IsPlannedFeature = false
                     },
                     new QuickActionItem
                     {

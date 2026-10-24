@@ -37,6 +37,8 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<IVisitorPhotoStorageService, VisitorPhotoStorageService>();
 builder.Services.AddHostedService<VisitorRetentionWorker>();
 
+builder.Services.AddScoped<IIssuePhotoStorageService, IssuePhotoStorageService>();
+
 var app = builder.Build();
 
 // Run startup database seeder
