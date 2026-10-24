@@ -20,6 +20,8 @@ namespace SocietyOS.Data
         public DbSet<IssueVote> IssueVotes => Set<IssueVote>();
         public DbSet<IssueComment> IssueComments => Set<IssueComment>();
         public DbSet<IssueStatusHistory> IssueStatusHistories => Set<IssueStatusHistory>();
+        public DbSet<Announcement> Announcements => Set<Announcement>();
+        public DbSet<AnnouncementRead> AnnouncementReads => Set<AnnouncementRead>();
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -153,6 +155,42 @@ namespace SocietyOS.Data
                 entity.HasOne(h => h.ChangedByAdmin)
                       .WithMany()
                       .HasForeignKey(h => h.ChangedByAdminId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+            // Announcement indexes and relationships
+            builder.Entity<Announcement>(entity =>
+            {
+                entity.HasIndex(a => a.State);
+                entity.HasIndex(a => a.PublishedAtUtc);
+                entity.HasIndex(a => a.ExpiresAtUtc);
+                entity.HasIndex(a => a.Category);
+                entity.HasIndex(a => a.Priority);
+                entity.HasIndex(a => new { a.State, a.IsPinned, a.Priority });
+
+                entity.HasOne(a => a.CreatedByAdmin)
+                      .WithMany()
+                      .HasForeignKey(a => a.CreatedByAdminId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(a => a.LastEditedByAdmin)
+                      .WithMany()
+                      .HasForeignKey(a => a.LastEditedByAdminId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // Per-user AnnouncementRead composite uniqueness constraint
+            builder.Entity<AnnouncementRead>(entity =>
+            {
+                entity.HasIndex(r => new { r.AnnouncementId, r.UserId }).IsUnique();
+
+                entity.HasOne(r => r.Announcement)
+                      .WithMany(a => a.Reads)
+                      .HasForeignKey(r => r.AnnouncementId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(r => r.User)
+                      .WithMany()
+                      .HasForeignKey(r => r.UserId)
                       .OnDelete(DeleteBehavior.Restrict);
             });
         }

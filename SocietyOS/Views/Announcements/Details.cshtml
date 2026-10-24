@@ -1,0 +1,88 @@
+﻿@model SocietyOS.ViewModels.AnnouncementDetailsViewModel
+@using SocietyOS.Models
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/societyos-home.css" asp-append-version="true" />
+}
+
+<div class="home-container" style="max-width: 640px;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill">
+            ← All Announcements
+        </a>
+        @if (Model.IsAdmin)
+        {
+            <div class="d-flex gap-2">
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-dark rounded-pill">Edit</a>
+                <a asp-action="Admin" class="btn btn-sm btn-dark rounded-pill">Admin Console</a>
+            </div>
+        }
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success py-2 px-3 mb-3" style="font-size: 13px;">@TempData["SuccessMessage"]</div>
+    }
+
+    @if (Model.State != AnnouncementState.Published)
+    {
+        <div class="alert alert-warning py-2 px-3 mb-3" style="font-size: 13px;">
+            <strong>Admin Preview Mode:</strong> This announcement is currently in <strong>@Model.State</strong> state and is hidden from residents.
+        </div>
+    }
+
+    <article class="bg-white border rounded-4 p-4 shadow-sm mb-3 @(Model.Priority == AnnouncementPriority.Urgent ? "border-danger" : "")">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <div class="d-flex flex-wrap gap-1 align-items-center">
+                @if (Model.IsPinned)
+                {
+                    <span class="badge bg-dark rounded-pill" style="font-size: 11px;">📌 Pinned</span>
+                }
+                <span class="badge rounded-pill @(Model.Priority == AnnouncementPriority.Urgent ? "bg-danger" : Model.Priority == AnnouncementPriority.Important ? "bg-warning text-dark" : "bg-secondary")" style="font-size: 11px;">
+                    @(Model.Priority == AnnouncementPriority.Urgent ? "⚠️ URGENT ALERT" : Model.Priority.ToString())
+                </span>
+                <span class="badge bg-light text-secondary border" style="font-size: 11px;">
+                    @Model.Category
+                </span>
+            </div>
+
+            <small class="text-muted" style="font-size: 12px;">
+                Published @((Model.PublishedAtUtc ?? Model.CreatedAtUtc).ToString("dd MMM yyyy, HH:mm")) UTC
+            </small>
+        </div>
+
+        <h1 class="h4 fw-bold mb-3">@Model.Title</h1>
+
+        <div class="p-3 bg-light rounded-3 mb-3" style="font-size: 14px; line-height: 1.65; white-space: pre-line;">@Model.Content</div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center text-muted pt-2 border-top" style="font-size: 11px;">
+            <span>
+                @if (Model.IsRead && Model.FirstReadAtUtc.HasValue)
+                {
+                    <strong class="text-success">✓ Marked as Read</strong> <span>(@Model.FirstReadAtUtc.Value.ToString("dd MMM, HH:mm") UTC)</span>
+                }
+            </span>
+            @if (Model.ExpiresAtUtc.HasValue)
+            {
+                <span>Valid until: <strong>@Model.ExpiresAtUtc.Value.ToString("dd MMM yyyy, HH:mm") UTC</strong></span>
+            }
+        </div>
+    </article>
+
+    @if (Model.IsAdmin)
+    {
+        <div class="bg-white border rounded-4 p-3 shadow-sm" style="font-size: 12px;">
+            <div class="fw-bold mb-1">Administrative Metadata</div>
+            <div class="text-muted">
+                Created by: <strong>@Model.CreatedByAdminName</strong> • Total Resident Reads: <strong>@Model.TotalResidentReads</strong>
+                @if (!string.IsNullOrEmpty(Model.LastEditedByAdminName))
+                {
+                    <span> • Last edited by: <strong>@Model.LastEditedByAdminName</strong> (@Model.UpdatedAtUtc.ToString("dd MMM HH:mm") UTC)</span>
+                }
+            </div>
+        </div>
+    }
+</div>

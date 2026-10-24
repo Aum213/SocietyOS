@@ -1,0 +1,80 @@
+﻿@model SocietyOS.ViewModels.AnnouncementFormViewModel
+@using SocietyOS.Models
+@{
+    ViewData["Title"] = "Edit Announcement";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/societyos-home.css" asp-append-version="true" />
+}
+
+<div class="home-container" style="max-width: 600px;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <span class="badge bg-dark mb-1" style="font-size: 10px;">STATE: @Model.CurrentState</span>
+            <h2 class="m-0 fw-bold" style="font-size: 22px;">Edit Announcement</h2>
+        </div>
+        <a asp-action="Admin" class="btn btn-sm btn-outline-secondary rounded-pill">Cancel</a>
+    </div>
+
+    <div class="bg-white border rounded-4 p-4 shadow-sm">
+        <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+            <input type="hidden" asp-for="Id" />
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2" style="font-size: 13px;"></div>
+
+            <div class="mb-3">
+                <label asp-for="Title" class="form-label fw-bold" style="font-size: 13px;"></label>
+                <input asp-for="Title" class="form-control" />
+                <span asp-validation-for="Title" class="text-danger" style="font-size: 12px;"></span>
+            </div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label asp-for="Category" class="form-label fw-bold" style="font-size: 13px;"></label>
+                    <select asp-for="Category" asp-items="Html.GetEnumSelectList<AnnouncementCategory>()" class="form-select"></select>
+                </div>
+                <div class="col-6">
+                    <label asp-for="Priority" class="form-label fw-bold" style="font-size: 13px;"></label>
+                    <select asp-for="Priority" asp-items="Html.GetEnumSelectList<AnnouncementPriority>()" class="form-select"></select>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Content" class="form-label fw-bold" style="font-size: 13px;"></label>
+                <textarea asp-for="Content" rows="6" class="form-control"></textarea>
+                <span asp-validation-for="Content" class="text-danger" style="font-size: 12px;"></span>
+            </div>
+
+            <div class="row g-2 mb-3 align-items-center">
+                <div class="col-sm-7">
+                    <label asp-for="ExpiresAtUtc" class="form-label fw-bold" style="font-size: 12px;"></label>
+                    <input asp-for="ExpiresAtUtc" type="datetime-local" class="form-control form-control-sm"
+                           value="@(Model.ExpiresAtUtc.HasValue ? Model.ExpiresAtUtc.Value.ToString("yyyy-MM-ddTHH:mm") : "")" />
+                    <span asp-validation-for="ExpiresAtUtc" class="text-danger" style="font-size: 11px;"></span>
+                </div>
+                <div class="col-sm-5 pt-3">
+                    <div class="form-check">
+                        <input asp-for="IsPinned" class="form-check-input" />
+                        <label asp-for="IsPinned" class="form-check-label fw-semibold" style="font-size: 13px;"></label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 pt-2">
+                <button type="submit" name="SubmitAction" value="Save" class="btn btn-dark flex-grow-1 py-2 fw-bold rounded-pill">
+                    Save Changes
+                </button>
+                @if (Model.CurrentState == AnnouncementState.Draft)
+                {
+                    <button type="submit" name="SubmitAction" value="Publish" class="btn btn-success py-2 px-4 fw-bold rounded-pill" style="background: var(--sos-primary);">
+                        Save & Publish
+                    </button>
+                }
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

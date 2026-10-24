@@ -1,5 +1,13 @@
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using SocietyOS.Data;
 using SocietyOS.Models;
 using SocietyOS.Services;
 
@@ -8,33 +16,109 @@ namespace SocietyOS.Controllers
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
+        private readonly ApplicationDbContext _context;
         private readonly IDailyMaximService _maximService;
 
-        public HomeController(ILogger<HomeController> logger, IDailyMaximService? maximService = null)
+        public HomeController(
+            ILogger<HomeController> logger,
+            ApplicationDbContext context,
+            IDailyMaximService? maximService = null)
         {
             _logger = logger;
-            // Fallback instantiation ensures the controller functions even before Program.cs registration
+            _context = context;
             _maximService = maximService ?? new DailyMaximService();
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
             var isAuth = User.Identity?.IsAuthenticated ?? false;
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
             var userEmail = User.Identity?.Name ?? "resident@societyos.local";
-            var displayName = isAuth ? (userEmail.Contains('@') ? userEmail.Split('@')[0] : userEmail) : "Aarav Sharma";
+            var displayName = isAuth
+                ? (userEmail.Contains('@') ? userEmail.Split('@')[0] : userEmail)
+                : "Aarav Sharma";
+
+            var flatNumber = "B-204";
+            var buildingName = "Tower B (Gulmohar)";
+            var roleName = isAuth ? "Resident" : "Resident (Demo)";
+
+            if (isAuth && !string.IsNullOrEmpty(currentUserId))
+            {
+                var userRecord = await _context.Users
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(u => u.Id == currentUserId);
+
+                if (userRecord != null && !string.IsNullOrWhiteSpace(userRecord.FullName))
+                {
+                    displayName = userRecord.FullName;
+                }
+
+                var residentProfile = await _context.ResidentProfiles
+                    .AsNoTracking()
+                    .Include(r => r.Flat)
+                        .ThenInclude(f => f.Building)
+                    .FirstOrDefaultAsync(r => r.UserId == currentUserId && r.IsVerified);
+
+                if (residentProfile != null)
+                {
+                    flatNumber = $"{residentProfile.Flat.Building.Code}-{residentProfile.Flat.FlatNumber}";
+                    buildingName = residentProfile.Flat.Building.Name;
+                    roleName = $"Resident ({residentProfile.ResidentType})";
+                }
+                else if (User.IsInRole("Administrator"))
+                {
+                    flatNumber = "ADMIN";
+                    buildingName = "Society Management Office";
+                    roleName = "Administrator";
+                }
+                else if (User.IsInRole("SecurityGuard"))
+                {
+                    flatNumber = "GATE-1";
+                    buildingName = "Security Desk";
+                    roleName = "Security Guard";
+                }
+            }
+
+            // Query live published, unexpired announcements from database
+            var nowUtc = DateTime.UtcNow;
+            var eligibleNoticesQuery = _context.Announcements
+                .AsNoTracking()
+                .Where(a => a.State == AnnouncementState.Published &&
+                            (!a.ExpiresAtUtc.HasValue || a.ExpiresAtUtc.Value > nowUtc));
+
+            var unreadNoticeCount = isAuth
+                ? await eligibleNoticesQuery.CountAsync(a => !a.Reads.Any(r => r.UserId == currentUserId))
+                : 0;
+
+            var latestNotices = await eligibleNoticesQuery
+                .OrderByDescending(a => a.IsPinned)
+                .ThenByDescending(a => a.Priority)
+                .ThenByDescending(a => a.PublishedAtUtc ?? a.CreatedAtUtc)
+                .Take(3)
+                .Select(a => new CommunityUpdatePreview
+                {
+                    Title = a.Title,
+                    Category = a.Category.ToString(),
+                    TimeAgo = (a.PublishedAtUtc ?? a.CreatedAtUtc).ToString("dd MMM"),
+                    IsUrgent = a.Priority == AnnouncementPriority.Urgent,
+                    Badge = a.Priority == AnnouncementPriority.Urgent
+                        ? "Urgent Alert"
+                        : (a.IsPinned ? "Pinned Notice" : a.Category.ToString())
+                })
+                .ToListAsync();
 
             var model = new HomeViewModel
             {
                 IsAuthenticated = isAuth,
                 ResidentName = displayName,
                 Email = userEmail,
-                FlatNumber = "B-204",
-                BuildingName = "Tower B (Gulmohar)",
-                RoleName = isAuth ? "Resident (Owner)" : "Resident (Demo)",
+                FlatNumber = flatNumber,
+                BuildingName = buildingName,
+                RoleName = roleName,
                 PhoneNumber = "+91 98765 43210",
                 DailyMaxim = _maximService.GetTodaysMaxim(),
 
-                // 6 Core Quick Actions
+                // 6 Core Quick Actions (Features A, B, and C are all active!)
                 PrimaryActions = new List<QuickActionItem>
                 {
                     new QuickActionItem
@@ -45,17 +129,17 @@ namespace SocietyOS.Controllers
                         BadgeText = "Safety",
                         ActionCategory = "SOS",
                         IsPlannedFeature = true,
-                        PlannedPhaseNotice = "Emergency SOS will alert on-duty guards and designated emergency contacts in Phase 2."
+                        PlannedPhaseNotice = "Emergency SOS will alert on-duty guards and designated emergency contacts."
                     },
                     new QuickActionItem
                     {
                         Id = "daily-help",
                         Title = "Daily Help",
                         Subtitle = "Maid, Cook & Driver",
-                        BadgeText = "Active",
+                        BadgeText = "Staff",
                         ActionCategory = "Community",
                         IsPlannedFeature = true,
-                        PlannedPhaseNotice = "Staff entry records and attendance tracking will connect in Phase 2."
+                        PlannedPhaseNotice = "Staff entry records and attendance tracking are planned for future updates."
                     },
                     new QuickActionItem
                     {
@@ -64,7 +148,7 @@ namespace SocietyOS.Controllers
                         Subtitle = "Approve & View Gate Requests",
                         BadgeText = "Active",
                         ActionCategory = "Security",
-                        TargetUrl = "/Visitors/Pending",
+                        TargetUrl = User.IsInRole("SecurityGuard") ? "/Visitors/Register" : "/Visitors/Pending",
                         IsPlannedFeature = false
                     },
                     new QuickActionItem
@@ -85,18 +169,17 @@ namespace SocietyOS.Controllers
                         BadgeText = "Facility",
                         ActionCategory = "Facility",
                         IsPlannedFeature = true,
-                        PlannedPhaseNotice = "Amenity slot reservations will be introduced in the facility management phase."
+                        PlannedPhaseNotice = "Amenity slot reservations will be introduced in a future phase."
                     },
                     new QuickActionItem
                     {
                         Id = "notices",
                         Title = "Notices & Alerts",
-                        Subtitle = "Feature C Workflow",
-                        BadgeText = "Task 04",
-                        ActionCategory = "General",
+                        Subtitle = "Official Society Circulars",
+                        BadgeText = unreadNoticeCount > 0 ? $"{unreadNoticeCount} New" : "Active",
+                        ActionCategory = unreadNoticeCount > 0 ? "SOS" : "General",
                         TargetUrl = "/Announcements",
-                        IsPlannedFeature = true,
-                        PlannedPhaseNotice = "Feature C (Official Society Announcements) is scheduled for Task 04."
+                        IsPlannedFeature = false
                     }
                 },
 
@@ -121,40 +204,22 @@ namespace SocietyOS.Controllers
                         BadgeText = "Info",
                         ActionCategory = "General",
                         IsPlannedFeature = true,
-                        PlannedPhaseNotice = "Verified society directory will be available once resident profiles are populated."
+                        PlannedPhaseNotice = "Verified society directory will be available once all resident profiles are populated."
                     },
                     new QuickActionItem
                     {
                         Id = "gate-pass",
-                        Title = "Delivery Pass",
-                        Subtitle = "Amazon, Swiggy, Zomato",
+                        Title = "Gate Register (Guard)",
+                        Subtitle = "Log Arriving Visitor",
                         BadgeText = "Gate",
                         ActionCategory = "Security",
-                        IsPlannedFeature = true,
-                        PlannedPhaseNotice = "Quick delivery auto-approvals will connect to the Gate Guard interface."
+                        TargetUrl = "/Visitors/Register",
+                        IsPlannedFeature = false
                     }
                 },
 
-                // Restrained Community Updates Preview
-                RecentUpdates = new List<CommunityUpdatePreview>
-                {
-                    new CommunityUpdatePreview
-                    {
-                        Title = "Tower B Lift Modernization scheduled for Friday, 10 AM to 1 PM.",
-                        Category = "Maintenance Alert",
-                        TimeAgo = "2h ago",
-                        IsUrgent = true,
-                        Badge = "Urgent Notice"
-                    },
-                    new CommunityUpdatePreview
-                    {
-                        Title = "Water pressure sensor installation completed for 2nd & 3rd floors.",
-                        Category = "Issue Resolved",
-                        TimeAgo = "Yesterday",
-                        IsUrgent = false,
-                        Badge = "Issue Update"
-                    }
-                }
+                // Populated with live published announcements from DB
+                RecentUpdates = latestNotices
             };
 
             return View(model);

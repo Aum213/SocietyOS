@@ -1,0 +1,178 @@
+﻿@model SocietyOS.ViewModels.AnnouncementFeedViewModel
+@using SocietyOS.Models
+@{
+    ViewData["Title"] = "Society Announcements & Alerts";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/societyos-home.css" asp-append-version="true" />
+    <style>
+        .notice-card {
+            background: #ffffff;
+            border: 1px solid var(--sos-border);
+            border-radius: var(--sos-radius-lg);
+            padding: 16px;
+            box-shadow: var(--sos-shadow-card);
+            margin-bottom: 14px;
+            position: relative;
+            transition: transform 0.15s ease, border-color 0.15s ease;
+        }
+        .notice-card.unread-card {
+            border-left: 4px solid var(--sos-primary);
+            background: #fcfefd;
+        }
+        .notice-card.urgent-card {
+            border: 1px solid #fca5a5;
+            border-left: 5px solid var(--sos-danger);
+            background: #fffafa;
+        }
+        .priority-pill-Urgent {
+            background: var(--sos-danger);
+            color: #ffffff;
+        }
+        .priority-pill-Important {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .priority-pill-Normal {
+            background: #f1f5f9;
+            color: #475569;
+        }
+    </style>
+}
+
+<div class="home-container" style="max-width: 680px;">
+    <!-- Top Header -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-success" style="font-size: 10px; letter-spacing: 0.5px;">NOTICE BOARD</span>
+                @if (Model.UnreadCount > 0)
+                {
+                    <span class="badge bg-danger rounded-pill" style="font-size: 10px;">
+                        @Model.UnreadCount Unread
+                    </span>
+                }
+            </div>
+            <h2 class="m-0 fw-bold" style="font-size: 22px;">Announcements</h2>
+        </div>
+
+        <div class="d-flex gap-2">
+            @if (User.IsInRole("Administrator"))
+            {
+                <a asp-action="Admin" class="btn btn-sm btn-dark rounded-pill px-3 fw-semibold">
+                    Manage Notices
+                </a>
+            }
+            <a asp-controller="Home" asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill">
+                Home
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <form method="get" asp-action="Index" class="bg-white border rounded-4 p-3 mb-3 shadow-sm">
+        <div class="row g-2 align-items-end">
+            <div class="col-6">
+                <label for="catSelect" class="form-label text-muted fw-semibold mb-1" style="font-size: 11px;">CATEGORY</label>
+                <select id="catSelect" name="category" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">All Categories</option>
+                    @foreach (var cat in Enum.GetValues<AnnouncementCategory>())
+                    {
+                        <option value="@cat" selected="@(Model.SelectedCategory == cat)">@cat</option>
+                    }
+                </select>
+            </div>
+            <div class="col-6">
+                <label for="prioSelect" class="form-label text-muted fw-semibold mb-1" style="font-size: 11px;">PRIORITY</label>
+                <select id="prioSelect" name="priority" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">All Priorities</option>
+                    @foreach (var prio in Enum.GetValues<AnnouncementPriority>())
+                    {
+                        <option value="@prio" selected="@(Model.SelectedPriority == prio)">@prio</option>
+                    }
+                </select>
+            </div>
+        </div>
+    </form>
+
+    <!-- Announcements List -->
+    @if (!Model.Announcements.Any())
+    {
+        <div class="text-center bg-white border rounded-4 p-5">
+            <div style="font-size: 36px; margin-bottom: 8px;">📢</div>
+            <h5 class="fw-bold mb-1">No Active Announcements</h5>
+            <p class="text-muted m-0" style="font-size: 13px;">
+                There are currently no published community notices matching your filter.
+            </p>
+        </div>
+    }
+    else
+    {
+        @foreach (var item in Model.Announcements)
+        {
+            <article class="notice-card @(!item.IsRead ? "unread-card" : "") @(item.Priority == AnnouncementPriority.Urgent ? "urgent-card" : "")">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                    <div class="d-flex flex-wrap align-items-center gap-1">
+                        @if (item.IsPinned)
+                        {
+                            <span class="badge bg-dark text-white rounded-pill" style="font-size: 10px;">📌 Pinned</span>
+                        }
+                        <span class="badge rounded-pill priority-pill-@item.Priority" style="font-size: 10px; font-weight: 700;">
+                            @(item.Priority == AnnouncementPriority.Urgent ? "⚠️ URGENT" : item.Priority.ToString())
+                        </span>
+                        <span class="badge bg-light text-secondary border" style="font-size: 10px;">
+                            @item.Category
+                        </span>
+                        @if (!item.IsRead)
+                        {
+                            <span class="badge bg-success rounded-pill" style="font-size: 10px;">NEW</span>
+                        }
+                    </div>
+                    <small class="text-muted" style="font-size: 11px;">
+                        @((item.PublishedAtUtc ?? item.CreatedAtUtc).ToString("dd MMM yyyy"))
+                    </small>
+                </div>
+
+                <h3 class="h6 fw-bold mb-1">
+                    <a asp-action="Details" asp-route-id="@item.Id" class="text-decoration-none" style="color: var(--sos-text-primary);">
+                        @item.Title
+                    </a>
+                </h3>
+
+                <p class="text-muted mb-2" style="font-size: 13px; line-height: 1.45;">
+                    @item.ContentSnippet
+                </p>
+
+                <div class="d-flex align-items-center justify-content-between pt-2 border-top mt-2" style="font-size: 11px;">
+                    <span class="text-muted">
+                        @(item.IsRead ? "✓ Read" : "● Unread Notice")
+                        @if (item.ExpiresAtUtc.HasValue)
+                        {
+                            <span> • Valid until @item.ExpiresAtUtc.Value.ToString("dd MMM")</span>
+                        }
+                    </span>
+                    <a asp-action="Details" asp-route-id="@item.Id" class="fw-bold text-decoration-none" style="color: var(--sos-primary);">
+                        Read Full Notice →
+                    </a>
+                </div>
+            </article>
+        }
+
+        @if (Model.TotalPages > 1)
+        {
+            <nav aria-label="Announcement pages" class="d-flex justify-content-center gap-2 my-3">
+                @for (int p = 1; p <= Model.TotalPages; p++)
+                {
+                    <a asp-action="Index"
+                       asp-route-category="@Model.SelectedCategory"
+                       asp-route-priority="@Model.SelectedPriority"
+                       asp-route-page="@p"
+                       class="btn btn-sm @(p == Model.CurrentPage ? "btn-success" : "btn-outline-secondary") rounded-pill px-3">
+                        @p
+                    </a>
+                }
+            </nav>
+        }
+    }
+</div>

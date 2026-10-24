@@ -27,7 +27,7 @@ namespace SocietyOS.Data
                 }
             }
 
-            // 2. Seed Society Topology (4 Buildings, 120 total flats)
+            // 2. Seed Society Topology (4 Buildings, 120+ flats)
             if (!await context.Buildings.AnyAsync())
             {
                 var buildings = new[]
@@ -51,7 +51,7 @@ namespace SocietyOS.Data
                             {
                                 BuildingId = building.Id,
                                 Floor = floor,
-                                FlatNumber = $"{floor}0{unit}" // e.g. 101, 102, 103 ... 1003
+                                FlatNumber = $"{floor}0{unit}"
                             });
                         }
                     }
@@ -59,7 +59,7 @@ namespace SocietyOS.Data
                 await context.SaveChangesAsync();
             }
 
-            // 3. Provision Initial Administrator from Configuration Allowlist
+            // 3. Provision Initial Administrator
             var adminEmails = configuration.GetSection("AdminSettings:SuperAdminEmails").Get<string[]>()
                               ?? new[] { "admin@societyos.local" };
 
@@ -77,7 +77,6 @@ namespace SocietyOS.Data
                         CreatedAtUtc = DateTime.UtcNow
                     };
 
-                    // Initial seed password for development
                     var result = await userManager.CreateAsync(newAdmin, "SocietyAdmin@2026!");
                     if (result.Succeeded)
                     {
@@ -138,7 +137,6 @@ namespace SocietyOS.Data
                 }
             }
 
-            // Ensure Flat B-204 exists in Tower B so guards can select it
             var towerB = await context.Buildings.FirstOrDefaultAsync(b => b.Code == "B");
             if (towerB != null && residentUser != null)
             {
@@ -150,7 +148,6 @@ namespace SocietyOS.Data
                     await context.SaveChangesAsync();
                 }
 
-                // Ensure the resident profile exists and is marked verified
                 var profile = await context.ResidentProfiles.FirstOrDefaultAsync(r => r.UserId == residentUser.Id);
                 if (profile == null)
                 {
@@ -172,7 +169,42 @@ namespace SocietyOS.Data
                     await context.SaveChangesAsync();
                 }
             }
+
+            // 6. Seed Initial Published Society Announcements
+            var primaryAdmin = await userManager.FindByEmailAsync("admin@societyos.local");
+            if (primaryAdmin != null && !await context.Announcements.AnyAsync())
+            {
+                var now = DateTime.UtcNow;
+                context.Announcements.AddRange(
+                    new Announcement
+                    {
+                        Title = "Tower B Elevator Modernization: Friday 10 AM – 1 PM",
+                        Content = "Preventive maintenance and rope tension inspection will be carried out on the Tower B passenger lift this Friday between 10:00 AM and 1:00 PM. The service lift will remain operational throughout.",
+                        Category = AnnouncementCategory.Maintenance,
+                        Priority = AnnouncementPriority.Urgent,
+                        State = AnnouncementState.Published,
+                        IsPinned = true,
+                        CreatedByAdminId = primaryAdmin.Id,
+                        CreatedAtUtc = now.AddHours(-3),
+                        UpdatedAtUtc = now.AddHours(-3),
+                        PublishedAtUtc = now.AddHours(-3)
+                    },
+                    new Announcement
+                    {
+                        Title = "Annual Diwali Cultural Evening & Community Dinner",
+                        Content = "All residents of Towers A, B, C, and D are cordially invited to the SocietyOS Diwali Cultural Evening at the Central Lawn this Sunday at 7:00 PM.",
+                        Category = AnnouncementCategory.Events,
+                        Priority = AnnouncementPriority.Normal,
+                        State = AnnouncementState.Published,
+                        IsPinned = false,
+                        CreatedByAdminId = primaryAdmin.Id,
+                        CreatedAtUtc = now.AddDays(-1),
+                        UpdatedAtUtc = now.AddDays(-1),
+                        PublishedAtUtc = now.AddDays(-1)
+                    }
+                );
+                await context.SaveChangesAsync();
+            }
         }
     }
 }
-

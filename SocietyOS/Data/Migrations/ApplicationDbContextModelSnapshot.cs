@@ -159,6 +159,105 @@ namespace SocietyOS.Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("SocietyOS.Models.Announcement", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Category")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedByAdminId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("ExpiresAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsPinned")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LastEditedByAdminId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("PublishedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("State")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(140)
+                        .HasColumnType("nvarchar(140)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Category");
+
+                    b.HasIndex("CreatedByAdminId");
+
+                    b.HasIndex("ExpiresAtUtc");
+
+                    b.HasIndex("LastEditedByAdminId");
+
+                    b.HasIndex("Priority");
+
+                    b.HasIndex("PublishedAtUtc");
+
+                    b.HasIndex("State");
+
+                    b.HasIndex("State", "IsPinned", "Priority");
+
+                    b.ToTable("Announcements");
+                });
+
+            modelBuilder.Entity("SocietyOS.Models.AnnouncementRead", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AnnouncementId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("FirstReadAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("AnnouncementId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("AnnouncementReads");
+                });
+
             modelBuilder.Entity("SocietyOS.Models.ApplicationUser", b =>
                 {
                     b.Property<string>("Id")
@@ -677,6 +776,43 @@ namespace SocietyOS.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("SocietyOS.Models.Announcement", b =>
+                {
+                    b.HasOne("SocietyOS.Models.ApplicationUser", "CreatedByAdmin")
+                        .WithMany()
+                        .HasForeignKey("CreatedByAdminId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SocietyOS.Models.ApplicationUser", "LastEditedByAdmin")
+                        .WithMany()
+                        .HasForeignKey("LastEditedByAdminId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CreatedByAdmin");
+
+                    b.Navigation("LastEditedByAdmin");
+                });
+
+            modelBuilder.Entity("SocietyOS.Models.AnnouncementRead", b =>
+                {
+                    b.HasOne("SocietyOS.Models.Announcement", "Announcement")
+                        .WithMany("Reads")
+                        .HasForeignKey("AnnouncementId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SocietyOS.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Announcement");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SocietyOS.Models.CommunityIssue", b =>
                 {
                     b.HasOne("SocietyOS.Models.Building", "Building")
@@ -824,6 +960,11 @@ namespace SocietyOS.Data.Migrations
                     b.Navigation("Flat");
 
                     b.Navigation("RegisteredByGuard");
+                });
+
+            modelBuilder.Entity("SocietyOS.Models.Announcement", b =>
+                {
+                    b.Navigation("Reads");
                 });
 
             modelBuilder.Entity("SocietyOS.Models.ApplicationUser", b =>
