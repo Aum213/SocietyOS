@@ -37,6 +37,10 @@ namespace SocietyOS.Data
         public DbSet<EmergencyStatusHistory> EmergencyStatusHistories => Set<EmergencyStatusHistory>();
         public DbSet<SocietyEmergencyContact> SocietyEmergencyContacts => Set<SocietyEmergencyContact>();
 
+        //Marketplace Listings
+        public DbSet<MarketplaceListing> MarketplaceListings => Set<MarketplaceListing>();
+        public DbSet<MarketplaceListingReport> MarketplaceListingReports => Set<MarketplaceListingReport>();
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -364,6 +368,49 @@ namespace SocietyOS.Data
                 entity.HasOne(c => c.UpdatedByAdmin)
                       .WithMany()
                       .HasForeignKey(c => c.UpdatedByAdminId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+            // MarketplaceListing indexes and non-cascading foreign keys
+            builder.Entity<MarketplaceListing>(entity =>
+            {
+                entity.HasIndex(m => new { m.Status, m.Category, m.CreatedAtUtc });
+                entity.HasIndex(m => new { m.Status, m.ListingType });
+                entity.HasIndex(m => new { m.SellerUserId, m.CreatedAtUtc });
+
+                entity.HasOne(m => m.SellerUser)
+                      .WithMany()
+                      .HasForeignKey(m => m.SellerUserId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(m => m.Flat)
+                      .WithMany()
+                      .HasForeignKey(m => m.FlatId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(m => m.Building)
+                      .WithMany()
+                      .HasForeignKey(m => m.BuildingId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(m => m.ModeratedByAdmin)
+                      .WithMany()
+                      .HasForeignKey(m => m.ModeratedByAdminId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // MarketplaceListingReport composite uniqueness constraint: 1 report per resident per listing
+            builder.Entity<MarketplaceListingReport>(entity =>
+            {
+                entity.HasIndex(r => new { r.ListingId, r.ReporterUserId }).IsUnique();
+
+                entity.HasOne(r => r.Listing)
+                      .WithMany(m => m.Reports)
+                      .HasForeignKey(r => r.ListingId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(r => r.ReporterUser)
+                      .WithMany()
+                      .HasForeignKey(r => r.ReporterUserId)
                       .OnDelete(DeleteBehavior.Restrict);
             });
         }

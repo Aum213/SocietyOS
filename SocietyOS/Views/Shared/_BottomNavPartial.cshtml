@@ -6,11 +6,15 @@
                  currentAction.Equals("Index", StringComparison.OrdinalIgnoreCase);
     var isGate = currentController.Equals("Visitors", StringComparison.OrdinalIgnoreCase);
     var isIssues = currentController.Equals("Issues", StringComparison.OrdinalIgnoreCase);
-    var isMarket = currentController.Equals("Home", StringComparison.OrdinalIgnoreCase) &&
-                   currentAction.Equals("Market", StringComparison.OrdinalIgnoreCase);
+    var isMarket = currentController.Equals("Marketplace", StringComparison.OrdinalIgnoreCase) ||
+                   (currentController.Equals("Home", StringComparison.OrdinalIgnoreCase) &&
+                    currentAction.Equals("Market", StringComparison.OrdinalIgnoreCase));
     var isMore = (currentController.Equals("Home", StringComparison.OrdinalIgnoreCase) &&
                   currentAction.Equals("More", StringComparison.OrdinalIgnoreCase)) ||
-                 currentController.Equals("Announcements", StringComparison.OrdinalIgnoreCase);
+                 currentController.Equals("Announcements", StringComparison.OrdinalIgnoreCase) ||
+                 currentController.Equals("Amenities", StringComparison.OrdinalIgnoreCase) ||
+                 currentController.Equals("DailyHelp", StringComparison.OrdinalIgnoreCase) ||
+                 currentController.Equals("Emergency", StringComparison.OrdinalIgnoreCase);
 }
 
 <nav class="bottom-nav-bar" aria-label="Primary Bottom Navigation">
@@ -30,7 +34,7 @@
             <span>Home</span>
         </a>
 
-        <!-- 2. Gate (Role-resolved entry point on VisitorsController.Index) -->
+        <!-- 2. Gate -->
         <a asp-area="" asp-controller="Visitors" asp-action="Index"
            class="nav-item-btn @(isGate ? "active" : "")"
            aria-current="@(isGate ? "page" : null)">
@@ -45,7 +49,7 @@
             <span>Gate</span>
         </a>
 
-        <!-- 3. Issues (Opens Community Issue Feed) -->
+        <!-- 3. Issues -->
         <a asp-area="" asp-controller="Issues" asp-action="Index"
            class="nav-item-btn @(isIssues ? "active" : "")"
            aria-current="@(isIssues ? "page" : null)">
@@ -60,7 +64,7 @@
         </a>
 
         <!-- 4. Market -->
-        <a asp-area="" asp-controller="Home" asp-action="Market"
+        <a asp-area="" asp-controller="Marketplace" asp-action="Index"
            class="nav-item-btn @(isMarket ? "active" : "")"
            aria-current="@(isMarket ? "page" : null)">
             @if (isMarket)

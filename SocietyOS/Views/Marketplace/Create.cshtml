@@ -1,0 +1,99 @@
+﻿@model SocietyOS.ViewModels.MarketplaceListingFormViewModel
+@using SocietyOS.Models
+@using SocietyOS.Controllers
+@{
+    ViewData["Title"] = "Post a Marketplace Listing";
+}
+
+<div class="home-container" style="max-width: 600px;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <span class="badge bg-success mb-1" style="font-size: 10px;">RESIDENT LISTING</span>
+            <h2 class="m-0 fw-bold" style="font-size: 22px;">Sell or Give Away an Item</h2>
+        </div>
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill">Cancel</a>
+    </div>
+
+    <div class="bg-white border rounded-4 p-4 shadow-sm">
+        <form asp-action="Create" method="post" enctype="multipart/form-data">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2" style="font-size: 13px;"></div>
+
+            <div class="mb-3">
+                <label asp-for="Title" class="form-label fw-bold" style="font-size: 13px;"></label>
+                <input asp-for="Title" class="form-control" placeholder="e.g. Solid Wood Study Table with Chair" />
+                <span asp-validation-for="Title" class="text-danger" style="font-size: 12px;"></span>
+            </div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label asp-for="Category" class="form-label fw-bold" style="font-size: 13px;"></label>
+                    <select asp-for="Category" class="form-select">
+                        @foreach (var cat in Enum.GetValues<MarketplaceCategory>())
+                        {
+                            <option value="@cat">@MarketplaceController.FormatCategoryLabel(cat)</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-6">
+                    <label asp-for="Condition" class="form-label fw-bold" style="font-size: 13px;"></label>
+                    <select asp-for="Condition" class="form-select">
+                        @foreach (var cond in Enum.GetValues<MarketplaceItemCondition>())
+                        {
+                            <option value="@cond">@MarketplaceController.FormatConditionLabel(cond)</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label asp-for="ListingType" class="form-label fw-bold" style="font-size: 13px;"></label>
+                    <select asp-for="ListingType" class="form-select" id="typeSelect">
+                        <option value="@MarketplaceListingType.ForSale">For Sale (₹ INR)</option>
+                        <option value="@MarketplaceListingType.FreeGiveaway">Free Giveaway (₹0)</option>
+                    </select>
+                </div>
+                <div class="col-6" id="priceWrap">
+                    <label asp-for="PriceInr" class="form-label fw-bold" style="font-size: 13px;"></label>
+                    <input asp-for="PriceInr" type="number" step="1" min="0" class="form-control" placeholder="e.g. 2500" />
+                    <span asp-validation-for="PriceInr" class="text-danger" style="font-size: 12px;"></span>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Description" class="form-label fw-bold" style="font-size: 13px;"></label>
+                <textarea asp-for="Description" rows="4" class="form-control" placeholder="Describe dimensions, age, condition, and preferred pickup timings..."></textarea>
+                <span asp-validation-for="Description" class="text-danger" style="font-size: 12px;"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="SellerContactPhone" class="form-label fw-bold" style="font-size: 12px;"></label>
+                <input asp-for="SellerContactPhone" class="form-control" placeholder="+91 98765 43210 (Revealed only to verified neighbours on request)" />
+                <span asp-validation-for="SellerContactPhone" class="text-danger" style="font-size: 12px;"></span>
+            </div>
+
+            <div class="mb-4">
+                <label asp-for="Image" class="form-label fw-bold" style="font-size: 13px;"></label>
+                <input asp-for="Image" type="file" class="form-control" accept="image/jpeg,image/png,image/webp" capture="environment" />
+                <span asp-validation-for="Image" class="text-danger" style="font-size: 12px;"></span>
+            </div>
+
+            <button type="submit" class="btn btn-success w-100 py-2 fw-bold rounded-pill" style="background: var(--sos-primary);">
+                Submit Listing
+            </button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        const typeSelect = document.getElementById('typeSelect');
+        const priceWrap = document.getElementById('priceWrap');
+        function syncPriceVisibility() {
+            priceWrap.style.display = typeSelect.value === 'FreeGiveaway' ? 'none' : 'block';
+        }
+        typeSelect?.addEventListener('change', syncPriceVisibility);
+        syncPriceVisibility();
+    </script>
+}

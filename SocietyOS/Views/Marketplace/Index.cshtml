@@ -1,0 +1,148 @@
+﻿@model SocietyOS.ViewModels.MarketplaceFeedViewModel
+@using SocietyOS.Models
+@using SocietyOS.Controllers
+@{
+    ViewData["Title"] = "Resident Marketplace";
+}
+
+<div class="home-container" style="max-width: 720px;">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div>
+            <span class="badge bg-success mb-1" style="font-size: 10px; letter-spacing: 0.5px;">NEIGHBOURHOOD EXCHANGE</span>
+            <h2 class="m-0 fw-bold" style="font-size: 22px;">Resident Marketplace</h2>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            @if (User.IsInRole("Administrator"))
+            {
+                <a asp-action="Admin" class="btn btn-sm btn-dark rounded-pill px-3 fw-semibold">Moderation</a>
+            }
+            <a asp-action="MyListings" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-semibold">
+                My Items (@Model.MyListingsCount)
+            </a>
+            <a asp-action="Create" class="btn btn-sm btn-success rounded-pill px-3 fw-bold" style="background: var(--sos-primary);">
+                + Sell / Give Away
+            </a>
+        </div>
+    </div>
+
+    <!-- Search & Filter Bar -->
+    <form method="get" asp-action="Index" class="bg-white border rounded-4 p-3 mb-3 shadow-sm">
+        <div class="row g-2 align-items-end">
+            <div class="col-12 col-sm-4">
+                <label class="form-label text-muted fw-semibold mb-1" style="font-size: 11px;">SEARCH ITEMS</label>
+                <input type="search" name="q" value="@Model.SearchQuery" class="form-control form-control-sm" placeholder="Cycle, desk, books..." />
+            </div>
+            <div class="col-6 col-sm-3">
+                <label class="form-label text-muted fw-semibold mb-1" style="font-size: 11px;">CATEGORY</label>
+                <select name="category" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">All Categories</option>
+                    @foreach (var cat in Enum.GetValues<MarketplaceCategory>())
+                    {
+                        <option value="@cat" selected="@(Model.SelectedCategory == cat)">@MarketplaceController.FormatCategoryLabel(cat)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-6 col-sm-3">
+                <label class="form-label text-muted fw-semibold mb-1" style="font-size: 11px;">TYPE</label>
+                <select name="type" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">Sale & Free</option>
+                    <option value="@MarketplaceListingType.ForSale" selected="@(Model.SelectedType == MarketplaceListingType.ForSale)">For Sale (₹)</option>
+                    <option value="@MarketplaceListingType.FreeGiveaway" selected="@(Model.SelectedType == MarketplaceListingType.FreeGiveaway)">Free Giveaway</option>
+                </select>
+            </div>
+            <div class="col-12 col-sm-2">
+                <button type="submit" class="btn btn-sm btn-dark w-100">Filter</button>
+            </div>
+        </div>
+    </form>
+
+    @if (!Model.Listings.Any())
+    {
+        <div class="text-center bg-white border rounded-4 p-5">
+            <div style="font-size: 36px; margin-bottom: 8px;">🛍️</div>
+            <h5 class="fw-bold mb-1">No Active Marketplace Listings</h5>
+            <p class="text-muted mb-3" style="font-size: 13px;">
+                No approved items match your filter criteria right now.
+            </p>
+            <a asp-action="Create" class="btn btn-sm btn-success rounded-pill px-4 py-2 fw-bold" style="background: var(--sos-primary);">
+                Post an Item for Neighbours
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (var item in Model.Listings)
+            {
+                <div class="col-12 col-sm-6">
+                    <article class="bg-white border rounded-4 overflow-hidden shadow-sm h-100 d-flex flex-column">
+                        <a asp-action="Details" asp-route-id="@item.Id" class="text-decoration-none">
+                            @if (item.HasImage)
+                            {
+                                <div style="height: 170px; background: #f1f5f9; overflow: hidden;">
+                                    <img src="@Url.Action("Photo", "Marketplace", new { id = item.Id })"
+                                         style="width: 100%; height: 100%; object-fit: cover;"
+                                         alt="@item.Title" loading="lazy" />
+                                </div>
+                            }
+                            else
+                            {
+                                <div style="height: 170px; background: linear-gradient(135deg, #eef8f2 0%, #e2ece7 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--sos-primary);">
+                                    <span style="font-size: 32px;">📦</span>
+                                    <small class="fw-semibold mt-1" style="font-size: 11px;">@item.CategoryDisplay</small>
+                                </div>
+                            }
+                        </a>
+
+                        <div class="p-3 d-flex flex-column flex-grow-1 justify-content-between">
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="badge @(item.ListingType == MarketplaceListingType.FreeGiveaway ? "bg-success" : "bg-dark") rounded-pill" style="font-size: 12px;">
+                                        @item.PriceDisplay
+                                    </span>
+                                    <span class="badge bg-light text-secondary border" style="font-size: 10px;">
+                                        @item.ConditionDisplay
+                                    </span>
+                                </div>
+
+                                <h3 class="h6 fw-bold mt-2 mb-1">
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="text-decoration-none text-dark">
+                                        @item.Title
+                                    </a>
+                                </h3>
+
+                                <p class="text-muted mb-2" style="font-size: 12px; line-height: 1.4;">
+                                    @item.DescriptionSnippet
+                                </p>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center pt-2 border-top mt-2" style="font-size: 11px;">
+                                <span class="text-muted">📍 @item.TowerDisplay • @item.PostedDateDisplay</span>
+                                <a asp-action="Details" asp-route-id="@item.Id" class="fw-bold text-decoration-none" style="color: var(--sos-primary);">
+                                    Details →
+                                </a>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            }
+        </div>
+
+        @if (Model.TotalPages > 1)
+        {
+            <nav aria-label="Marketplace pages" class="d-flex justify-content-center gap-2 my-3">
+                @for (int p = 1; p <= Model.TotalPages; p++)
+                {
+                    <a asp-action="Index"
+                       asp-route-category="@Model.SelectedCategory"
+                       asp-route-type="@Model.SelectedType"
+                       asp-route-q="@Model.SearchQuery"
+                       asp-route-page="@p"
+                       class="btn btn-sm @(p == Model.CurrentPage ? "btn-success" : "btn-outline-secondary") rounded-pill px-3">
+                        @p
+                    </a>
+                }
+            </nav>
+        }
+    }
+</div>

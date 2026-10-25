@@ -227,7 +227,7 @@ namespace SocietyOS.Controllers
         [HttpGet]
         public IActionResult Market()
         {
-            return View();
+            return RedirectToAction("Index", "Marketplace");
         }
 
         [HttpGet]

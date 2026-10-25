@@ -126,6 +126,7 @@ namespace SocietyOS.Data
                     UserName = residentEmail,
                     Email = residentEmail,
                     FullName = "Aarav Sharma",
+                    PhoneNumber = "+91 98765 43210",
                     EmailConfirmed = true,
                     CreatedAtUtc = DateTime.UtcNow
                 };
@@ -138,9 +139,10 @@ namespace SocietyOS.Data
             }
 
             var towerB = await context.Buildings.FirstOrDefaultAsync(b => b.Code == "B");
+            Flat? flatB204 = null;
             if (towerB != null && residentUser != null)
             {
-                var flatB204 = await context.Flats.FirstOrDefaultAsync(f => f.BuildingId == towerB.Id && f.FlatNumber == "204");
+                flatB204 = await context.Flats.FirstOrDefaultAsync(f => f.BuildingId == towerB.Id && f.FlatNumber == "204");
                 if (flatB204 == null)
                 {
                     flatB204 = new Flat { BuildingId = towerB.Id, Floor = 2, FlatNumber = "204" };
@@ -349,6 +351,52 @@ namespace SocietyOS.Data
                         DisplayOrder = 2,
                         UpdatedByAdminId = primaryAdmin.Id,
                         UpdatedAtUtc = now
+                    }
+                );
+                await context.SaveChangesAsync();
+            }
+
+            // 10. Seed Initial Approved Marketplace Listings
+            if (residentUser != null && flatB204 != null && towerB != null && primaryAdmin != null &&
+            !await context.MarketplaceListings.AnyAsync(m => m.Title.Contains("Sheesham Wood Study Desk")))
+            {
+                var now = DateTime.UtcNow;
+                context.MarketplaceListings.AddRange(
+                    new MarketplaceListing
+                    {
+                        Title = "Solid Sheesham Wood Study Desk with Ergonomic Chair",
+                        Description = "4-foot solid wood study table with drawer and mesh ergonomic chair. Gently used for 1 year, no scratches. Buyer can inspect and pick up from Tower B.",
+                        Category = MarketplaceCategory.FurnitureAndHome,
+                        ListingType = MarketplaceListingType.ForSale,
+                        PriceInr = 4500m,
+                        Condition = MarketplaceItemCondition.LikeNew,
+                        Status = MarketplaceListingStatus.Active,
+                        SellerUserId = residentUser.Id,
+                        FlatId = flatB204.Id,
+                        BuildingId = towerB.Id,
+                        SellerContactPhone = "+91 98765 43210",
+                        ModeratedByAdminId = primaryAdmin.Id,
+                        ModeratedAtUtc = now,
+                        CreatedAtUtc = now.AddHours(-6),
+                        UpdatedAtUtc = now.AddHours(-6)
+                    },
+                    new MarketplaceListing
+                    {
+                        Title = "B.Tech Engineering Textbooks (Sem 1 to Sem 4 Set)",
+                        Description = "Complete set of Computer Engineering reference books in clean condition. Free giveaway to any junior student in the society.",
+                        Category = MarketplaceCategory.BooksAndStudy,
+                        ListingType = MarketplaceListingType.FreeGiveaway,
+                        PriceInr = null,
+                        Condition = MarketplaceItemCondition.Good,
+                        Status = MarketplaceListingStatus.Active,
+                        SellerUserId = residentUser.Id,
+                        FlatId = flatB204.Id,
+                        BuildingId = towerB.Id,
+                        SellerContactPhone = "+91 98765 43210",
+                        ModeratedByAdminId = primaryAdmin.Id,
+                        ModeratedAtUtc = now,
+                        CreatedAtUtc = now.AddDays(-1),
+                        UpdatedAtUtc = now.AddDays(-1)
                     }
                 );
                 await context.SaveChangesAsync();

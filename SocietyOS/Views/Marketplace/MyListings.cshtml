@@ -1,0 +1,50 @@
+﻿@model List<SocietyOS.ViewModels.MarketplaceCardViewModel>
+@using SocietyOS.Models
+@{
+    ViewData["Title"] = "My Marketplace Listings";
+}
+
+<div class="home-container" style="max-width: 680px;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2 class="m-0 fw-bold" style="font-size: 22px;">My Marketplace Items</h2>
+        <div class="d-flex gap-2">
+            <a asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill">Feed</a>
+            <a asp-action="Create" class="btn btn-sm btn-success rounded-pill px-3 fw-bold" style="background: var(--sos-primary);">+ Post Item</a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success py-2 px-3 mb-3" style="font-size: 13px;">@TempData["SuccessMessage"]</div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="bg-white border rounded-4 p-5 text-center">
+            <p class="text-muted mb-3" style="font-size: 13px;">You have not posted any items yet.</p>
+            <a asp-action="Create" class="btn btn-sm btn-success rounded-pill px-4 fw-bold" style="background: var(--sos-primary);">Create Your First Listing</a>
+        </div>
+    }
+    else
+    {
+        @foreach (var item in Model)
+        {
+            <div class="bg-white border rounded-4 p-3 mb-2 shadow-sm d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    <span class="badge @(item.Status == MarketplaceListingStatus.Active ? "bg-success" : item.Status == MarketplaceListingStatus.PendingApproval ? "bg-warning text-dark" : "bg-secondary") me-1" style="font-size: 10px;">
+                        @item.Status
+                    </span>
+                    <strong style="font-size: 15px;">@item.Title</strong> — <span class="fw-bold text-success">@item.PriceDisplay</span>
+                    <div class="text-muted" style="font-size: 11px;">@item.CategoryDisplay • Condition: @item.ConditionDisplay • Posted @item.PostedDateDisplay</div>
+                    @if (!string.IsNullOrEmpty(item.ModerationNote))
+                    {
+                        <div class="text-danger" style="font-size: 11px;">Admin Note: @item.ModerationNote</div>
+                    }
+                </div>
+                <div class="d-flex gap-2">
+                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-dark rounded-pill px-3" style="font-size: 11px;">View / Manage</a>
+                </div>
+            </div>
+        }
+    }
+</div>

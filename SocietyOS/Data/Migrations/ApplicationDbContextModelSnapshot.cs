@@ -970,6 +970,130 @@ namespace SocietyOS.Data.Migrations
                     b.ToTable("IssueVotes");
                 });
 
+            modelBuilder.Entity("SocietyOS.Models.MarketplaceListing", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BuildingId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Category")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Condition")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1500)
+                        .HasColumnType("nvarchar(1500)");
+
+                    b.Property<int>("FlatId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ImageStorageKey")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<int>("ListingType")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ModeratedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ModeratedByAdminId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ModerationNote")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<decimal?>("PriceInr")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<string>("SellerContactPhone")
+                        .HasMaxLength(25)
+                        .HasColumnType("nvarchar(25)");
+
+                    b.Property<string>("SellerUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("SoldOrWithdrawnAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BuildingId");
+
+                    b.HasIndex("FlatId");
+
+                    b.HasIndex("ModeratedByAdminId");
+
+                    b.HasIndex("SellerUserId", "CreatedAtUtc");
+
+                    b.HasIndex("Status", "ListingType");
+
+                    b.HasIndex("Status", "Category", "CreatedAtUtc");
+
+                    b.ToTable("MarketplaceListings");
+                });
+
+            modelBuilder.Entity("SocietyOS.Models.MarketplaceListingReport", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsReviewed")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("ListingId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("ReporterUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReporterUserId");
+
+                    b.HasIndex("ListingId", "ReporterUserId")
+                        .IsUnique();
+
+                    b.ToTable("MarketplaceListingReports");
+                });
+
             modelBuilder.Entity("SocietyOS.Models.ResidentProfile", b =>
                 {
                     b.Property<int>("Id")
@@ -1522,6 +1646,59 @@ namespace SocietyOS.Data.Migrations
                     b.Navigation("VoterUser");
                 });
 
+            modelBuilder.Entity("SocietyOS.Models.MarketplaceListing", b =>
+                {
+                    b.HasOne("SocietyOS.Models.Building", "Building")
+                        .WithMany()
+                        .HasForeignKey("BuildingId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SocietyOS.Models.Flat", "Flat")
+                        .WithMany()
+                        .HasForeignKey("FlatId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SocietyOS.Models.ApplicationUser", "ModeratedByAdmin")
+                        .WithMany()
+                        .HasForeignKey("ModeratedByAdminId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SocietyOS.Models.ApplicationUser", "SellerUser")
+                        .WithMany()
+                        .HasForeignKey("SellerUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Building");
+
+                    b.Navigation("Flat");
+
+                    b.Navigation("ModeratedByAdmin");
+
+                    b.Navigation("SellerUser");
+                });
+
+            modelBuilder.Entity("SocietyOS.Models.MarketplaceListingReport", b =>
+                {
+                    b.HasOne("SocietyOS.Models.MarketplaceListing", "Listing")
+                        .WithMany("Reports")
+                        .HasForeignKey("ListingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SocietyOS.Models.ApplicationUser", "ReporterUser")
+                        .WithMany()
+                        .HasForeignKey("ReporterUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Listing");
+
+                    b.Navigation("ReporterUser");
+                });
+
             modelBuilder.Entity("SocietyOS.Models.ResidentProfile", b =>
                 {
                     b.HasOne("SocietyOS.Models.Flat", "Flat")
@@ -1634,6 +1811,11 @@ namespace SocietyOS.Data.Migrations
             modelBuilder.Entity("SocietyOS.Models.Flat", b =>
                 {
                     b.Navigation("Residents");
+                });
+
+            modelBuilder.Entity("SocietyOS.Models.MarketplaceListing", b =>
+                {
+                    b.Navigation("Reports");
                 });
 #pragma warning restore 612, 618
         }

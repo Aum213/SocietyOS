@@ -1,0 +1,189 @@
+﻿@model SocietyOS.ViewModels.MarketplaceDetailsViewModel
+@using SocietyOS.Models
+@{
+    ViewData["Title"] = Model.Title + " — Marketplace";
+}
+
+<div class="home-container" style="max-width: 640px;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill">← Back to Market</a>
+        <div class="d-flex gap-2">
+            @if (Model.IsOwnListing && Model.Status != MarketplaceListingStatus.Sold && Model.Status != MarketplaceListingStatus.Withdrawn)
+            {
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-dark rounded-pill px-3">Edit Item</a>
+            }
+            @if (Model.IsAdmin)
+            {
+                <a asp-action="Admin" class="btn btn-sm btn-dark rounded-pill px-3">Admin Queue</a>
+            }
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success py-2 px-3 mb-3" style="font-size: 13px;">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["WarningMessage"] != null)
+    {
+        <div class="alert alert-warning py-2 px-3 mb-3" style="font-size: 13px;">@TempData["WarningMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger py-2 px-3 mb-3" style="font-size: 13px;">@TempData["ErrorMessage"]</div>
+    }
+
+    @if (Model.Status != MarketplaceListingStatus.Active)
+    {
+        <div class="alert alert-warning py-2 px-3 mb-3" style="font-size: 13px;">
+            <strong>Listing Status: @Model.Status.</strong> This item is not visible in the public marketplace feed.
+            @if (!string.IsNullOrEmpty(Model.ModerationNote))
+            {
+                <div class="mt-1">Admin Note: <em>@Model.ModerationNote</em></div>
+            }
+        </div>
+    }
+
+    <div class="bg-white border rounded-4 overflow-hidden shadow-sm mb-3">
+        @if (Model.HasImage)
+        {
+            <div style="max-height: 340px; background: #0f172a; text-align: center;">
+                <img src="@Url.Action("Photo", "Marketplace", new { id = Model.Id })"
+                     style="max-width: 100%; max-height: 340px; object-fit: contain;"
+                     alt="@Model.Title" />
+            </div>
+        }
+
+        <div class="p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                <span class="badge @(Model.ListingType == MarketplaceListingType.FreeGiveaway ? "bg-success" : "bg-dark") rounded-pill px-3 py-2" style="font-size: 14px;">
+                    @Model.PriceDisplay
+                </span>
+                <div class="d-flex gap-1">
+                    <span class="badge bg-light text-dark border" style="font-size: 11px;">@Model.CategoryDisplay</span>
+                    <span class="badge bg-light text-secondary border" style="font-size: 11px;">Condition: @Model.ConditionDisplay</span>
+                </div>
+            </div>
+
+            <h1 class="h4 fw-bold mb-2">@Model.Title</h1>
+            <div class="text-muted mb-3" style="font-size: 12px;">
+                📍 @Model.TowerDisplay • Posted @Model.PostedDateDisplay
+            </div>
+
+            <p style="font-size: 14px; line-height: 1.6; white-space: pre-line;">@Model.Description</p>
+
+            <!-- Seller Controls (If Viewing Own Listing) -->
+            @if (Model.IsOwnListing && (Model.Status == MarketplaceListingStatus.Active || Model.Status == MarketplaceListingStatus.PendingApproval))
+            {
+                <div class="p-3 bg-light rounded-3 mt-3 border d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <span class="fw-bold" style="font-size: 12px;">Manage Your Listing:</span>
+                    <div class="d-flex gap-2">
+                        <form asp-action="UpdateOwnStatus" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.Id" />
+                            <input type="hidden" name="actionType" value="MarkSold" />
+                            <button type="submit" class="btn btn-sm btn-success rounded-pill px-3 fw-bold">✓ Mark as Sold</button>
+                        </form>
+                        <form asp-action="UpdateOwnStatus" method="post" class="d-inline" onsubmit="return confirm('Withdraw this listing from the marketplace?');">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.Id" />
+                            <input type="hidden" name="actionType" value="Withdraw" />
+                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">Withdraw</button>
+                        </form>
+                    </div>
+                </div>
+            }
+
+            <!-- Intentional Seller Contact Section -->
+            @if (Model.Status == MarketplaceListingStatus.Active || Model.IsOwnListing || Model.IsAdmin)
+            {
+                <div class="pt-3 border-top mt-3">
+                    <h6 class="fw-bold mb-2" style="font-size: 13px;">Seller Contact Information</h6>
+                    @if (Model.IsContactRevealed)
+                    {
+                        <div class="p-3 rounded-3" style="background: #eef8f2; border: 1px solid #bbf7d0; font-size: 13px;">
+                            <div><strong>Resident Seller:</strong> @Model.RevealedSellerName (Flat <strong>@Model.RevealedSellerFlat</strong>)</div>
+                            <div class="d-flex flex-wrap gap-2 mt-2">
+                                @if (!string.IsNullOrWhiteSpace(Model.RevealedSellerPhone))
+                                {
+                                    <a href="tel:@Model.RevealedSellerPhone" class="btn btn-sm btn-success rounded-pill px-3 fw-bold" style="background: var(--sos-primary);">
+                                        📞 Call @Model.RevealedSellerPhone
+                                    </a>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(Model.RevealedSellerEmail))
+                                {
+                                    <a href="mailto:@Model.RevealedSellerEmail?subject=SocietyOS%20Marketplace:%20@Uri.EscapeDataString(Model.Title)" class="btn btn-sm btn-outline-dark rounded-pill px-3 fw-semibold">
+                                        ✉️ Email Seller
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <form asp-action="RevealContact" asp-route-id="@Model.Id" method="post">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-success w-100 py-2 fw-bold rounded-pill" style="background: var(--sos-primary);">
+                                🔒 Reveal Verified Seller Contact & Flat
+                            </button>
+                        </form>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Report Listing (Non-Owner Residents) -->
+    @if (!Model.IsOwnListing)
+    {
+        <div class="bg-white border rounded-4 p-3 shadow-sm mb-3">
+            <form asp-action="Report" method="post" class="d-flex gap-2 align-items-center">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <input type="text" name="reason" required minlength="5" maxlength="500" class="form-control form-control-sm" placeholder="Report inappropriate or commercial spam listing..." />
+                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3" style="white-space: nowrap; font-size: 12px;">
+                    Report Item
+                </button>
+            </form>
+        </div>
+    }
+
+    <!-- Administrator Moderation Console -->
+    @if (Model.IsAdmin)
+    {
+        <section class="bg-white border border-dark rounded-4 p-4 shadow-sm mb-4" aria-label="Administrator Moderation">
+            <span class="badge bg-dark mb-2">ADMINISTRATION MODERATION</span>
+            <form asp-action="Moderate" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <div class="mb-2">
+                    <label class="form-label fw-bold" style="font-size: 12px;">Moderation Note (Optional)</label>
+                    <input type="text" name="note" value="@Model.ModerationNote" class="form-control form-control-sm" placeholder="Reason for approval, rejection, or withdrawal..." />
+                </div>
+                <div class="d-flex flex-wrap gap-2 mt-2">
+                    <button type="submit" name="targetStatus" value="@MarketplaceListingStatus.Active" class="btn btn-sm btn-success rounded-pill px-3 fw-bold">
+                        Approve & Publish
+                    </button>
+                    <button type="submit" name="targetStatus" value="@MarketplaceListingStatus.Rejected" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold">
+                        Reject Listing
+                    </button>
+                    <button type="submit" name="targetStatus" value="@MarketplaceListingStatus.Withdrawn" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                        Withdraw Listing
+                    </button>
+                </div>
+            </form>
+
+            @if (Model.Reports.Any())
+            {
+                <div class="mt-3 pt-3 border-top" style="font-size: 12px;">
+                    <strong class="text-danger">Resident Reports (@Model.Reports.Count):</strong>
+                    @foreach (var r in Model.Reports)
+                    {
+                        <div class="border-top py-1 mt-1">
+                            <strong>@r.ReporterName</strong> (@r.CreatedAtDisplay): @r.Reason
+                        </div>
+                    }
+                </div>
+            }
+        </section>
+    }
+</div>

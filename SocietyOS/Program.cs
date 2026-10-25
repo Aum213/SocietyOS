@@ -41,6 +41,8 @@ builder.Services.AddSingleton<ISocietyTimeZoneService, SocietyTimeZoneService>()
 
 builder.Services.AddScoped<IIssuePhotoStorageService, IssuePhotoStorageService>();
 
+builder.Services.AddScoped<IMarketplacePhotoStorageService, MarketplacePhotoStorageService>();
+
 var app = builder.Build();
 
 // Run startup database seeder
