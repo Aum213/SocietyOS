@@ -1,0 +1,77 @@
+﻿@model SocietyOS.ViewModels.PaymentReceiptViewModel
+@using SocietyOS.Controllers
+@{
+    ViewData["Title"] = "Payment Receipt " + Model.PaymentReference;
+}
+
+@section Styles {
+    <style>
+        @@media print {
+            .no-print, .bottom-nav-bar, header, footer {
+                display: none !important;
+            }
+            body {
+                background: #ffffff !important;
+                padding-bottom: 0 !important;
+            }
+        }
+    </style>
+}
+
+<div class="home-container" style="max-width: 580px;">
+    <div class="d-flex justify-content-between align-items-center mb-3 no-print">
+        <a asp-action="Details" asp-route-id="@Model.BillId" class="btn btn-sm btn-outline-secondary rounded-pill">
+            ← Back to Bill @Model.BillNumber
+        </a>
+        <button type="button" onclick="window.print()" class="btn btn-sm btn-dark rounded-pill px-3 fw-bold">
+            🖨️ Print Receipt
+        </button>
+    </div>
+
+    <div class="bg-white border rounded-4 p-4 shadow-sm">
+        <div class="text-center border-bottom pb-3 mb-3">
+            <div class="fw-bold text-success" style="font-size: 18px;">SocietyOS Residential Community</div>
+            <div class="text-muted" style="font-size: 12px;">Maintenance Payment Ledger Receipt</div>
+            <div class="badge @(Model.IsReversed ? "bg-danger" : "bg-success") rounded-pill mt-2 px-3 py-1">
+                @(Model.IsReversed ? "REVERSED RECEIPT" : "RECORDED PAYMENT RECEIPT")
+            </div>
+        </div>
+
+        <div class="row g-3 mb-3" style="font-size: 13px;">
+            <div class="col-6">
+                <span class="text-muted d-block" style="font-size: 11px;">RECEIPT REFERENCE</span>
+                <strong>@Model.PaymentReference</strong>
+            </div>
+            <div class="col-6 text-end">
+                <span class="text-muted d-block" style="font-size: 11px;">PAYMENT DATE</span>
+                <strong>@Model.PaymentDateLocal.ToString("dd MMM yyyy")</strong>
+            </div>
+            <div class="col-6">
+                <span class="text-muted d-block" style="font-size: 11px;">FLAT / UNIT</span>
+                <strong>Flat @Model.FlatDisplay (@Model.BuildingName)</strong>
+            </div>
+            <div class="col-6 text-end">
+                <span class="text-muted d-block" style="font-size: 11px;">RELATED BILL</span>
+                <strong>@Model.BillNumber (@Model.BillingPeriodDisplay)</strong>
+            </div>
+        </div>
+
+        <div class="p-3 bg-light rounded-3 text-center my-3">
+            <span class="text-muted d-block" style="font-size: 11px; text-transform: uppercase;">Amount Received</span>
+            <div class="fw-bold text-success" style="font-size: 26px;">
+                @MaintenanceController.FormatInr(Model.AmountReceivedInr)
+            </div>
+            <div class="text-muted" style="font-size: 12px;">
+                Method: <strong>@Model.PaymentMethodDisplay</strong>
+                @(!string.IsNullOrEmpty(Model.ExternalTransactionRef) ? $" • Ref: {Model.ExternalTransactionRef}" : "")
+            </div>
+        </div>
+
+        <div class="border-top pt-3 text-muted" style="font-size: 11px; line-height: 1.5;">
+            <div>Recorded by: <strong>@Model.RecordedByAdminName</strong> on @Model.RecordedAtLocalDisplay</div>
+            <div class="mt-1">
+                <em>Note: This receipt confirms that a payment record was entered into the SocietyOS ledger by society administration. Cheque and electronic transfers remain subject to actual bank realization.</em>
+            </div>
+        </div>
+    </div>
+</div>

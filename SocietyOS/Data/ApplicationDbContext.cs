@@ -41,6 +41,11 @@ namespace SocietyOS.Data
         public DbSet<MarketplaceListing> MarketplaceListings => Set<MarketplaceListing>();
         public DbSet<MarketplaceListingReport> MarketplaceListingReports => Set<MarketplaceListingReport>();
 
+        //Maintenance
+        public DbSet<MaintenanceBill> MaintenanceBills => Set<MaintenanceBill>();
+        public DbSet<MaintenancePayment> MaintenancePayments => Set<MaintenancePayment>();
+        public DbSet<MaintenanceAdjustment> MaintenanceAdjustments => Set<MaintenanceAdjustment>();
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -411,6 +416,69 @@ namespace SocietyOS.Data
                 entity.HasOne(r => r.ReporterUser)
                       .WithMany()
                       .HasForeignKey(r => r.ReporterUserId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+            // MaintenanceBill uniqueness and relationship rules
+            builder.Entity<MaintenanceBill>(entity =>
+            {
+                entity.HasIndex(b => b.BillNumber).IsUnique();
+                // Prevent duplicate monthly maintenance bills for the same flat and period
+                entity.HasIndex(b => new { b.FlatId, b.BillingYear, b.BillingMonth }).IsUnique();
+                entity.HasIndex(b => new { b.BillingYear, b.BillingMonth, b.IsVoid });
+                entity.HasIndex(b => b.DueDateLocal);
+
+                entity.HasOne(b => b.Flat)
+                      .WithMany()
+                      .HasForeignKey(b => b.FlatId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(b => b.CreatedByAdmin)
+                      .WithMany()
+                      .HasForeignKey(b => b.CreatedByAdminId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(b => b.VoidedByAdmin)
+                      .WithMany()
+                      .HasForeignKey(b => b.VoidedByAdminId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // MaintenancePayment indexes and non-cascading audit foreign keys
+            builder.Entity<MaintenancePayment>(entity =>
+            {
+                entity.HasIndex(p => p.PaymentReference).IsUnique();
+                entity.HasIndex(p => new { p.BillId, p.IsReversed });
+                entity.HasIndex(p => p.PaymentDateLocal);
+
+                entity.HasOne(p => p.Bill)
+                      .WithMany(b => b.Payments)
+                      .HasForeignKey(p => p.BillId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(p => p.RecordedByAdmin)
+                      .WithMany()
+                      .HasForeignKey(p => p.RecordedByAdminId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(p => p.ReversedByAdmin)
+                      .WithMany()
+                      .HasForeignKey(p => p.ReversedByAdminId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // MaintenanceAdjustment configuration
+            builder.Entity<MaintenanceAdjustment>(entity =>
+            {
+                entity.HasIndex(a => a.BillId);
+
+                entity.HasOne(a => a.Bill)
+                      .WithMany(b => b.Adjustments)
+                      .HasForeignKey(a => a.BillId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(a => a.CreatedByAdmin)
+                      .WithMany()
+                      .HasForeignKey(a => a.CreatedByAdminId)
                       .OnDelete(DeleteBehavior.Restrict);
             });
         }

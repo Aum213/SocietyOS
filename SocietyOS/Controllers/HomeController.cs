@@ -107,6 +107,7 @@ namespace SocietyOS.Controllers
                 .ToListAsync();
 
             var isGuard = User.IsInRole("SecurityGuard");
+            var isAdmin = User.IsInRole("Administrator");
 
             var model = new HomeViewModel
             {
@@ -189,12 +190,11 @@ namespace SocietyOS.Controllers
                     {
                         Id = "pay-dues",
                         Title = "Maintenance Dues",
-                        Subtitle = "Monthly Society Billing",
-                        BadgeText = "Planned",
+                        Subtitle = "Bills, Balances & Receipts",
+                        BadgeText = "Active",
                         ActionCategory = "Facility",
-                        TargetUrl = "#pay-dues",
-                        IsPlannedFeature = true,
-                        PlannedPhaseNotice = "Society maintenance billing and receipt generation are planned for a future phase."
+                        TargetUrl = isAdmin ? "/Maintenance/Admin" : "/Maintenance",
+                        IsPlannedFeature = false
                     },
                     new QuickActionItem
                     {
@@ -211,9 +211,9 @@ namespace SocietyOS.Controllers
                         Id = "gate-pass",
                         Title = "Gate Desk",
                         Subtitle = isGuard ? "Register Arriving Visitor" : "Guard Gate Registration",
-                        BadgeText = isGuard || User.IsInRole("Administrator") ? "Active" : "Guard Only",
+                        BadgeText = isGuard || isAdmin ? "Active" : "Guard Only",
                         ActionCategory = "Security",
-                        TargetUrl = isGuard || User.IsInRole("Administrator") ? "/Visitors/Register" : "/Visitors",
+                        TargetUrl = isGuard || isAdmin ? "/Visitors/Register" : "/Visitors",
                         IsPlannedFeature = false
                     }
                 },

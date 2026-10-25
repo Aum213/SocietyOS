@@ -970,6 +970,191 @@ namespace SocietyOS.Data.Migrations
                     b.ToTable("IssueVotes");
                 });
 
+            modelBuilder.Entity("SocietyOS.Models.MaintenanceAdjustment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("AmountInr")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("BillId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedByAdminId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BillId");
+
+                    b.HasIndex("CreatedByAdminId");
+
+                    b.ToTable("MaintenanceAdjustments");
+                });
+
+            modelBuilder.Entity("SocietyOS.Models.MaintenanceBill", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BillNumber")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<int>("BillingMonth")
+                        .HasColumnType("int");
+
+                    b.Property<int>("BillingYear")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedByAdminId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<DateOnly>("DueDateLocal")
+                        .HasColumnType("date");
+
+                    b.Property<int>("FlatId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsVoid")
+                        .HasColumnType("bit");
+
+                    b.Property<DateOnly>("IssueDateLocal")
+                        .HasColumnType("date");
+
+                    b.Property<decimal>("OriginalAmountInr")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("VoidReason")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<DateTime?>("VoidedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("VoidedByAdminId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BillNumber")
+                        .IsUnique();
+
+                    b.HasIndex("CreatedByAdminId");
+
+                    b.HasIndex("DueDateLocal");
+
+                    b.HasIndex("VoidedByAdminId");
+
+                    b.HasIndex("BillingYear", "BillingMonth", "IsVoid");
+
+                    b.HasIndex("FlatId", "BillingYear", "BillingMonth")
+                        .IsUnique();
+
+                    b.ToTable("MaintenanceBills");
+                });
+
+            modelBuilder.Entity("SocietyOS.Models.MaintenancePayment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("AmountReceivedInr")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("BillId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ExternalTransactionRef")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsReversed")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<DateOnly>("PaymentDateLocal")
+                        .HasColumnType("date");
+
+                    b.Property<int>("PaymentMethod")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PaymentReference")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<DateTime>("RecordedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RecordedByAdminId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ReversalReason")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<DateTime?>("ReversedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ReversedByAdminId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PaymentDateLocal");
+
+                    b.HasIndex("PaymentReference")
+                        .IsUnique();
+
+                    b.HasIndex("RecordedByAdminId");
+
+                    b.HasIndex("ReversedByAdminId");
+
+                    b.HasIndex("BillId", "IsReversed");
+
+                    b.ToTable("MaintenancePayments");
+                });
+
             modelBuilder.Entity("SocietyOS.Models.MarketplaceListing", b =>
                 {
                     b.Property<int>("Id")
@@ -1646,6 +1831,77 @@ namespace SocietyOS.Data.Migrations
                     b.Navigation("VoterUser");
                 });
 
+            modelBuilder.Entity("SocietyOS.Models.MaintenanceAdjustment", b =>
+                {
+                    b.HasOne("SocietyOS.Models.MaintenanceBill", "Bill")
+                        .WithMany("Adjustments")
+                        .HasForeignKey("BillId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SocietyOS.Models.ApplicationUser", "CreatedByAdmin")
+                        .WithMany()
+                        .HasForeignKey("CreatedByAdminId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Bill");
+
+                    b.Navigation("CreatedByAdmin");
+                });
+
+            modelBuilder.Entity("SocietyOS.Models.MaintenanceBill", b =>
+                {
+                    b.HasOne("SocietyOS.Models.ApplicationUser", "CreatedByAdmin")
+                        .WithMany()
+                        .HasForeignKey("CreatedByAdminId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SocietyOS.Models.Flat", "Flat")
+                        .WithMany()
+                        .HasForeignKey("FlatId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SocietyOS.Models.ApplicationUser", "VoidedByAdmin")
+                        .WithMany()
+                        .HasForeignKey("VoidedByAdminId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CreatedByAdmin");
+
+                    b.Navigation("Flat");
+
+                    b.Navigation("VoidedByAdmin");
+                });
+
+            modelBuilder.Entity("SocietyOS.Models.MaintenancePayment", b =>
+                {
+                    b.HasOne("SocietyOS.Models.MaintenanceBill", "Bill")
+                        .WithMany("Payments")
+                        .HasForeignKey("BillId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SocietyOS.Models.ApplicationUser", "RecordedByAdmin")
+                        .WithMany()
+                        .HasForeignKey("RecordedByAdminId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SocietyOS.Models.ApplicationUser", "ReversedByAdmin")
+                        .WithMany()
+                        .HasForeignKey("ReversedByAdminId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Bill");
+
+                    b.Navigation("RecordedByAdmin");
+
+                    b.Navigation("ReversedByAdmin");
+                });
+
             modelBuilder.Entity("SocietyOS.Models.MarketplaceListing", b =>
                 {
                     b.HasOne("SocietyOS.Models.Building", "Building")
@@ -1811,6 +2067,13 @@ namespace SocietyOS.Data.Migrations
             modelBuilder.Entity("SocietyOS.Models.Flat", b =>
                 {
                     b.Navigation("Residents");
+                });
+
+            modelBuilder.Entity("SocietyOS.Models.MaintenanceBill", b =>
+                {
+                    b.Navigation("Adjustments");
+
+                    b.Navigation("Payments");
                 });
 
             modelBuilder.Entity("SocietyOS.Models.MarketplaceListing", b =>

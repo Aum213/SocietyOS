@@ -1,0 +1,68 @@
+﻿@model SocietyOS.ViewModels.RecordPaymentInputModel
+@using SocietyOS.Models
+@using SocietyOS.Controllers
+@{
+    ViewData["Title"] = "Record Payment — " + Model.BillNumber;
+}
+
+<div class="home-container" style="max-width: 560px;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <span class="badge bg-dark mb-1" style="font-size: 10px;">OFFICIAL LEDGER ENTRY</span>
+            <h2 class="m-0 fw-bold" style="font-size: 22px;">Record Payment</h2>
+        </div>
+        <a asp-action="Details" asp-route-id="@Model.BillId" class="btn btn-sm btn-outline-secondary rounded-pill">Cancel</a>
+    </div>
+
+    <div class="bg-white border rounded-4 p-4 shadow-sm">
+        <div class="p-3 bg-light rounded-3 mb-3" style="font-size: 13px;">
+            <div><strong>Bill:</strong> @Model.BillNumber (@Model.BillingPeriodDisplay) — <strong>Flat @Model.FlatDisplay</strong></div>
+            <div class="mt-1">
+                Net Bill: <strong>@MaintenanceController.FormatInr(Model.NetBillAmountInr)</strong> •
+                Paid: <strong class="text-success">@MaintenanceController.FormatInr(Model.AlreadyPaidInr)</strong> •
+                Remaining Due: <strong class="text-danger">@MaintenanceController.FormatInr(Model.CurrentOutstandingInr)</strong>
+            </div>
+        </div>
+
+        <form asp-action="RecordPayment" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="BillId" />
+
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label asp-for="AmountReceivedInr" class="form-label fw-bold" style="font-size: 13px;"></label>
+                    <input asp-for="AmountReceivedInr" type="number" step="0.01" min="0.01" max="@Model.CurrentOutstandingInr" class="form-control" />
+                    <span asp-validation-for="AmountReceivedInr" class="text-danger" style="font-size: 12px;"></span>
+                </div>
+                <div class="col-6">
+                    <label asp-for="PaymentDateLocal" class="form-label fw-bold" style="font-size: 13px;"></label>
+                    <input asp-for="PaymentDateLocal" type="date" class="form-control" />
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="PaymentMethod" class="form-label fw-bold" style="font-size: 13px;"></label>
+                <select asp-for="PaymentMethod" class="form-select">
+                    @foreach (var m in Enum.GetValues<MaintenancePaymentMethod>())
+                    {
+                        <option value="@m">@MaintenanceController.FormatPaymentMethod(m)</option>
+                    }
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="ExternalTransactionRef" class="form-label fw-bold" style="font-size: 12px;"></label>
+                <input asp-for="ExternalTransactionRef" class="form-control" placeholder="e.g. UPI UTR 429811209812 or Cheque #00412" />
+            </div>
+
+            <div class="mb-4">
+                <label asp-for="Notes" class="form-label fw-bold" style="font-size: 12px;"></label>
+                <input asp-for="Notes" class="form-control" placeholder="Optional receipt note..." />
+            </div>
+
+            <button type="submit" class="btn btn-success w-100 py-2 fw-bold rounded-pill" style="background: var(--sos-primary);">
+                Record Payment & Generate Receipt
+            </button>
+        </form>
+    </div>
+</div>

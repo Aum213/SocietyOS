@@ -1,0 +1,134 @@
+﻿@model SocietyOS.ViewModels.ResidentMaintenanceDashboardViewModel
+@using SocietyOS.Models
+@using SocietyOS.Controllers
+@{
+    ViewData["Title"] = "Maintenance Dues — " + Model.FlatDisplay;
+}
+
+<div class="home-container" style="max-width: 700px;">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div>
+            <span class="badge bg-success mb-1" style="font-size: 10px; letter-spacing: 0.5px;">UNIT @Model.FlatDisplay • @Model.BuildingName</span>
+            <h2 class="m-0 fw-bold" style="font-size: 22px;">Maintenance Dues & Bills</h2>
+        </div>
+        <div class="d-flex gap-2">
+            @if (User.IsInRole("Administrator"))
+            {
+                <a asp-action="Admin" class="btn btn-sm btn-dark rounded-pill px-3 fw-semibold">Admin Ledger</a>
+            }
+            <a asp-controller="Home" asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill">Home</a>
+        </div>
+    </div>
+
+    <!-- Summary Balance Card -->
+    <section class="bg-white border rounded-4 p-4 shadow-sm mb-3" aria-label="Account Balance Summary">
+        <div class="row g-3 align-items-center">
+            <div class="col-12 col-sm-6">
+                <span class="text-muted d-block fw-bold" style="font-size: 11px; text-transform: uppercase;">Current Outstanding Balance</span>
+                <div class="fw-bold @(Model.TotalOutstandingInr > 0 ? "text-danger" : "text-success")" style="font-size: 28px;">
+                    @MaintenanceController.FormatInr(Model.TotalOutstandingInr)
+                </div>
+                <small class="text-muted" style="font-size: 11px;">
+                    @(Model.TotalOutstandingInr > 0
+                        ? "Payable to Society Office (UPI / NEFT / Cheque recorded by Admin)"
+                        : "✓ All maintenance bills for your flat are settled!")
+                </small>
+            </div>
+            <div class="col-12 col-sm-6">
+                <div class="row g-2 text-center" style="font-size: 12px;">
+                    <div class="col-4">
+                        <div class="p-2 bg-light rounded-3">
+                            <strong class="d-block" style="font-size: 15px;">@Model.UnpaidOrPartialCount</strong>
+                            <span class="text-muted" style="font-size: 10px;">Open</span>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-2 bg-light rounded-3">
+                            <strong class="d-block text-danger" style="font-size: 15px;">@Model.OverdueCount</strong>
+                            <span class="text-muted" style="font-size: 10px;">Overdue</span>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-2 bg-light rounded-3">
+                            <strong class="d-block text-success" style="font-size: 15px;">@Model.PaidCount</strong>
+                            <span class="text-muted" style="font-size: 10px;">Paid</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Status Filter Pills -->
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <a asp-action="Index" class="btn btn-sm @(string.IsNullOrEmpty(Model.SelectedStatusFilter) ? "btn-dark" : "btn-outline-secondary") rounded-pill">All Bills</a>
+        <a asp-action="Index" asp-route-statusFilter="open" class="btn btn-sm @(Model.SelectedStatusFilter == "open" ? "btn-warning text-dark" : "btn-outline-secondary") rounded-pill">
+            Open / Unpaid (@Model.UnpaidOrPartialCount)
+        </a>
+        <a asp-action="Index" asp-route-statusFilter="overdue" class="btn btn-sm @(Model.SelectedStatusFilter == "overdue" ? "btn-danger" : "btn-outline-danger") rounded-pill">
+            Overdue (@Model.OverdueCount)
+        </a>
+        <a asp-action="Index" asp-route-statusFilter="paid" class="btn btn-sm @(Model.SelectedStatusFilter == "paid" ? "btn-success" : "btn-outline-success") rounded-pill">
+            Paid (@Model.PaidCount)
+        </a>
+    </div>
+
+    @if (!Model.Bills.Any())
+    {
+        <div class="bg-white border rounded-4 p-5 text-center">
+            <div style="font-size: 36px; margin-bottom: 8px;">🧾</div>
+            <h5 class="fw-bold mb-1">No Maintenance Bills Found</h5>
+            <p class="text-muted m-0" style="font-size: 13px;">No maintenance bills match your current filter for Flat @Model.FlatDisplay.</p>
+        </div>
+    }
+    else
+    {
+        @foreach (var bill in Model.Bills)
+        {
+            <article class="bg-white border @(bill.IsOverdue ? "border-danger" : "") rounded-4 p-3 mb-3 shadow-sm">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                    <div>
+                        <span class="badge @(bill.Status == MaintenanceBillStatus.Paid ? "bg-success" : bill.Status == MaintenanceBillStatus.PartiallyPaid ? "bg-warning text-dark" : "bg-secondary") rounded-pill me-1">
+                            @(bill.Status == MaintenanceBillStatus.PartiallyPaid ? "Partially Paid" : bill.Status.ToString())
+                        </span>
+                        @if (bill.IsOverdue)
+                        {
+                            <span class="badge bg-danger rounded-pill me-1">⚠️ OVERDUE</span>
+                        }
+                        <strong style="font-size: 15px;">@bill.BillingPeriodDisplay</strong>
+                        <span class="text-muted ms-1" style="font-size: 12px;">(@bill.BillNumber)</span>
+                    </div>
+                    <small class="text-muted" style="font-size: 11px;">
+                        Due: <strong>@bill.DueDateLocal.ToString("dd MMM yyyy")</strong>
+                    </small>
+                </div>
+
+                <p class="text-muted mb-2" style="font-size: 12px;">@bill.Description</p>
+
+                <div class="row g-2 bg-light rounded-3 p-2 mb-2 text-center" style="font-size: 12px;">
+                    <div class="col-4">
+                        <span class="text-muted d-block" style="font-size: 10px;">NET BILLED</span>
+                        <strong>@MaintenanceController.FormatInr(bill.NetBillAmountInr)</strong>
+                    </div>
+                    <div class="col-4">
+                        <span class="text-muted d-block" style="font-size: 10px;">PAID</span>
+                        <strong class="text-success">@MaintenanceController.FormatInr(bill.TotalPaidInr)</strong>
+                    </div>
+                    <div class="col-4">
+                        <span class="text-muted d-block" style="font-size: 10px;">REMAINING</span>
+                        <strong class="@(bill.OutstandingBalanceInr > 0 ? "text-danger" : "text-dark")">
+                            @MaintenanceController.FormatInr(bill.OutstandingBalanceInr)
+                        </strong>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center pt-1">
+                    <small class="text-muted" style="font-size: 11px;">Issued @bill.IssueDateLocal.ToString("dd MMM yyyy")</small>
+                    <a asp-action="Details" asp-route-id="@bill.Id" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-bold">
+                        View Invoice & Receipts →
+                    </a>
+                </div>
+            </article>
+        }
+    }
+</div>

@@ -401,6 +401,57 @@ namespace SocietyOS.Data
                 );
                 await context.SaveChangesAsync();
             }
+            // 11. Seed Initial Maintenance Bills for Flat B-204
+            if (flatB204 != null && primaryAdmin != null && !await context.MaintenanceBills.AnyAsync())
+            {
+                var nowUtc = DateTime.UtcNow;
+                var sepBill = new MaintenanceBill
+                {
+                    BillNumber = "BILL-202609-B204",
+                    FlatId = flatB204.Id,
+                    BillingYear = 2026,
+                    BillingMonth = 9,
+                    IssueDateLocal = new DateOnly(2026, 9, 1),
+                    DueDateLocal = new DateOnly(2026, 9, 15),
+                    Description = "Monthly Society Maintenance & Common Area Charges (September 2026)",
+                    OriginalAmountInr = 3200.00m,
+                    CreatedByAdminId = primaryAdmin.Id,
+                    CreatedAtUtc = nowUtc.AddDays(-45),
+                    UpdatedAtUtc = nowUtc.AddDays(-35)
+                };
+
+                var octBill = new MaintenanceBill
+                {
+                    BillNumber = "BILL-202610-B204",
+                    FlatId = flatB204.Id,
+                    BillingYear = 2026,
+                    BillingMonth = 10,
+                    IssueDateLocal = new DateOnly(2026, 10, 1),
+                    DueDateLocal = new DateOnly(2026, 10, 15),
+                    Description = "Monthly Society Maintenance & Common Area Charges (October 2026)",
+                    OriginalAmountInr = 3200.00m,
+                    CreatedByAdminId = primaryAdmin.Id,
+                    CreatedAtUtc = nowUtc.AddDays(-15),
+                    UpdatedAtUtc = nowUtc.AddDays(-15)
+                };
+
+                context.MaintenanceBills.AddRange(sepBill, octBill);
+                await context.SaveChangesAsync();
+
+                context.MaintenancePayments.Add(new MaintenancePayment
+                {
+                    BillId = sepBill.Id,
+                    PaymentReference = "RCPT-20260910-1042",
+                    AmountReceivedInr = 3200.00m,
+                    PaymentDateLocal = new DateOnly(2026, 9, 10),
+                    PaymentMethod = MaintenancePaymentMethod.UpiTransfer,
+                    ExternalTransactionRef = "UTR625319004218",
+                    Notes = "September maintenance settled on time.",
+                    RecordedByAdminId = primaryAdmin.Id,
+                    RecordedAtUtc = nowUtc.AddDays(-35)
+                });
+                await context.SaveChangesAsync();
+            }
         }
     }
 }

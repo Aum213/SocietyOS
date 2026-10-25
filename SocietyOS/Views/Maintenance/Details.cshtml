@@ -1,0 +1,215 @@
+﻿@model SocietyOS.ViewModels.MaintenanceBillDetailsViewModel
+@using SocietyOS.Models
+@using SocietyOS.Controllers
+@{
+    ViewData["Title"] = "Invoice " + Model.Bill.BillNumber;
+}
+
+@section Styles {
+    <style>
+        @@media print {
+            .no-print, .bottom-nav-bar, header, footer {
+                display: none !important;
+            }
+            body {
+                background: #ffffff !important;
+                padding-bottom: 0 !important;
+            }
+            .home-container {
+                max-width: 100% !important;
+                padding: 0 !important;
+            }
+            .invoice-print-card {
+                border: 1px solid #000 !important;
+                box-shadow: none !important;
+            }
+        }
+    </style>
+}
+
+<div class="home-container" style="max-width: 680px;">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 no-print">
+        <a asp-action="@(Model.IsAdmin ? "Admin" : "Index")" class="btn btn-sm btn-outline-secondary rounded-pill">
+            ← Back to @(Model.IsAdmin ? "Admin Console" : "My Bills")
+        </a>
+        <div class="d-flex gap-2">
+            @if (Model.IsAdmin && !Model.Bill.IsVoid && Model.Bill.OutstandingBalanceInr > 0)
+            {
+                <a asp-action="RecordPayment" asp-route-id="@Model.Bill.Id" class="btn btn-sm btn-success rounded-pill px-3 fw-bold" style="background: var(--sos-primary);">
+                    + Record Payment
+                </a>
+            }
+            <button type="button" onclick="window.print()" class="btn btn-sm btn-outline-dark rounded-pill px-3 fw-semibold">
+                🖨️ Print Bill
+            </button>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success py-2 px-3 mb-3 no-print" style="font-size: 13px;">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["WarningMessage"] != null)
+    {
+        <div class="alert alert-warning py-2 px-3 mb-3 no-print" style="font-size: 13px;">@TempData["WarningMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger py-2 px-3 mb-3 no-print" style="font-size: 13px;">@TempData["ErrorMessage"]</div>
+    }
+
+    <!-- Printable Invoice Card -->
+    <section class="bg-white border rounded-4 p-4 shadow-sm mb-3 invoice-print-card" aria-label="Maintenance Bill Statement">
+        <div class="d-flex justify-content-between align-items-start border-bottom pb-3 mb-3">
+            <div>
+                <div class="fw-bold text-success" style="font-size: 18px;">SocietyOS Residential Community</div>
+                <small class="text-muted">Official Maintenance Bill Statement</small>
+            </div>
+            <div class="text-end">
+                <span class="badge @(Model.Bill.Status == MaintenanceBillStatus.Paid ? "bg-success" : Model.Bill.Status == MaintenanceBillStatus.PartiallyPaid ? "bg-warning text-dark" : "bg-secondary") rounded-pill px-3 py-1">
+                    @(Model.Bill.Status == MaintenanceBillStatus.PartiallyPaid ? "Partially Paid" : Model.Bill.Status.ToString())
+                </span>
+                @if (Model.Bill.IsOverdue)
+                {
+                    <span class="badge bg-danger rounded-pill px-2 py-1 ms-1">OVERDUE</span>
+                }
+                <div class="fw-bold mt-1" style="font-size: 14px;">@Model.Bill.BillNumber</div>
+            </div>
+        </div>
+
+        <div class="row g-2 mb-3" style="font-size: 13px;">
+            <div class="col-6 col-sm-3">
+                <span class="text-muted d-block" style="font-size: 11px;">BILLED FLAT</span>
+                <strong>Flat @Model.Bill.FlatDisplay</strong>
+                <div class="text-muted" style="font-size: 11px;">@Model.Bill.BuildingName</div>
+            </div>
+            <div class="col-6 col-sm-3">
+                <span class="text-muted d-block" style="font-size: 11px;">BILLING PERIOD</span>
+                <strong>@Model.Bill.BillingPeriodDisplay</strong>
+            </div>
+            <div class="col-6 col-sm-3">
+                <span class="text-muted d-block" style="font-size: 11px;">ISSUE DATE</span>
+                <strong>@Model.Bill.IssueDateLocal.ToString("dd MMM yyyy")</strong>
+            </div>
+            <div class="col-6 col-sm-3">
+                <span class="text-muted d-block" style="font-size: 11px;">DUE DATE</span>
+                <strong class="@(Model.Bill.IsOverdue ? "text-danger" : "")">@Model.Bill.DueDateLocal.ToString("dd MMM yyyy")</strong>
+            </div>
+        </div>
+
+        <table class="table table-sm border-top mb-3" style="font-size: 13px;">
+            <tbody>
+                <tr>
+                    <td>@Model.Bill.Description (Base Amount)</td>
+                    <td class="text-end fw-semibold">@MaintenanceController.FormatInr(Model.Bill.OriginalAmountInr)</td>
+                </tr>
+                @foreach (var adj in Model.Adjustments)
+                {
+                    <tr>
+                        <td>
+                            <span class="badge bg-light text-dark border me-1" style="font-size: 10px;">@adj.Type</span>
+                            @adj.Reason <small class="text-muted">(@adj.CreatedAtLocalDisplay)</small>
+                        </td>
+                        <td class="text-end @(adj.Type == MaintenanceAdjustmentType.CreditOrWaiver ? "text-success" : "text-danger")">
+                            @(adj.Type == MaintenanceAdjustmentType.CreditOrWaiver ? "-" : "+")@MaintenanceController.FormatInr(adj.AmountInr)
+                        </td>
+                    </tr>
+                }
+                <tr class="table-light fw-bold">
+                    <td>Net Billed Amount</td>
+                    <td class="text-end">@MaintenanceController.FormatInr(Model.Bill.NetBillAmountInr)</td>
+                </tr>
+                <tr>
+                    <td class="text-success">Total Valid Payments Recorded</td>
+                    <td class="text-end text-success fw-bold">-@MaintenanceController.FormatInr(Model.Bill.TotalPaidInr)</td>
+                </tr>
+                <tr class="fw-bold" style="font-size: 15px;">
+                    <td>Remaining Outstanding Balance</td>
+                    <td class="text-end @(Model.Bill.OutstandingBalanceInr > 0 ? "text-danger" : "text-success")">
+                        @MaintenanceController.FormatInr(Model.Bill.OutstandingBalanceInr)
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Recorded Payments & Printable Receipts -->
+        <h6 class="fw-bold mb-2" style="font-size: 14px;">Recorded Payment History</h6>
+        @if (!Model.Payments.Any())
+        {
+            <p class="text-muted m-0" style="font-size: 12px;">No payments have been recorded against this bill yet.</p>
+        }
+        else
+        {
+            <div class="d-flex flex-column gap-2">
+                @foreach (var p in Model.Payments)
+                {
+                    <div class="p-2 border rounded-3 d-flex flex-wrap justify-content-between align-items-center gap-2 @(p.IsReversed ? "bg-light text-muted" : "")" style="font-size: 12px;">
+                        <div>
+                            <strong class="@(p.IsReversed ? "text-decoration-line-through" : "text-success")">
+                                @p.PaymentReference — @MaintenanceController.FormatInr(p.AmountReceivedInr)
+                            </strong>
+                            @if (p.IsReversed)
+                            {
+                                <span class="badge bg-secondary ms-1" style="font-size: 10px;">REVERSED</span>
+                            }
+                            <div class="text-muted" style="font-size: 11px;">
+                                Paid @p.PaymentDateLocal.ToString("dd MMM yyyy") via @p.PaymentMethodDisplay
+                                @(!string.IsNullOrEmpty(p.ExternalTransactionRef) ? $" (Ref: {p.ExternalTransactionRef})" : "")
+                            </div>
+                            @if (p.IsReversed && !string.IsNullOrEmpty(p.ReversalReason))
+                            {
+                                <div class="text-danger" style="font-size: 11px;">Reversal Reason: @p.ReversalReason (@p.ReversedAtLocalDisplay)</div>
+                            }
+                        </div>
+
+                        <div class="d-flex gap-2 no-print">
+                            <a asp-action="Receipt" asp-route-id="@p.Id" class="btn btn-sm btn-outline-success rounded-pill px-3" style="font-size: 11px;">
+                                🧾 Receipt
+                            </a>
+                            @if (Model.IsAdmin && !p.IsReversed)
+                            {
+                                <form asp-action="ReversePayment" method="post" class="d-flex gap-1" onsubmit="return confirm('Reverse this payment record and restore the bill balance?');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="paymentId" value="@p.Id" />
+                                    <input type="text" name="reason" required minlength="5" placeholder="Reversal reason..." class="form-control form-control-sm" style="width: 140px; font-size: 11px;" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2" style="font-size: 11px;">Reverse</button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </section>
+
+    <!-- Admin Adjustment Form (Credits / Waivers / Additional Charges) -->
+    @if (Model.IsAdmin && !Model.Bill.IsVoid && Model.Bill.OutstandingBalanceInr > 0)
+    {
+        <section class="bg-white border border-dark rounded-4 p-4 shadow-sm mb-4 no-print" aria-label="Administrator Ledger Adjustment">
+            <span class="badge bg-dark mb-2">ADMINISTRATION LEDGER ADJUSTMENT</span>
+            <h6 class="fw-bold mb-2">Apply Approved Waiver, Credit, or Additional Charge</h6>
+            <form asp-action="AddAdjustment" method="post" class="row g-2 align-items-end">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="BillId" value="@Model.Bill.Id" />
+                <div class="col-6 col-sm-3">
+                    <label class="form-label fw-bold" style="font-size: 11px;">Type</label>
+                    <select name="Type" class="form-select form-select-sm">
+                        <option value="@MaintenanceAdjustmentType.CreditOrWaiver">Credit / Waiver (-)</option>
+                        <option value="@MaintenanceAdjustmentType.AdditionalCharge">Additional Charge (+)</option>
+                    </select>
+                </div>
+                <div class="col-6 col-sm-3">
+                    <label class="form-label fw-bold" style="font-size: 11px;">Amount (₹ INR)</label>
+                    <input type="number" name="AmountInr" step="0.01" min="1" required class="form-control form-control-sm" placeholder="e.g. 200" />
+                </div>
+                <div class="col-12 col-sm-4">
+                    <label class="form-label fw-bold" style="font-size: 11px;">Audit Reason</label>
+                    <input type="text" name="Reason" required minlength="5" maxlength="300" class="form-control form-control-sm" placeholder="e.g. Committee waiver" />
+                </div>
+                <div class="col-12 col-sm-2">
+                    <button type="submit" class="btn btn-sm btn-dark w-100">Apply</button>
+                </div>
+            </form>
+        </section>
+    }
+</div>

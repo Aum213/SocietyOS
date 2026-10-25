@@ -1,0 +1,114 @@
+﻿@model SocietyOS.ViewModels.AdminMaintenanceDashboardViewModel
+@using SocietyOS.Models
+@using SocietyOS.Controllers
+@{
+    ViewData["Title"] = "Maintenance Billing & Collection Console";
+}
+
+<div class="home-container" style="max-width: 860px;">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div>
+            <span class="badge bg-dark mb-1" style="font-size: 10px;">ADMINISTRATION LEDGER</span>
+            <h2 class="m-0 fw-bold" style="font-size: 22px;">Maintenance Dues & Collections</h2>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="CreateBill" class="btn btn-sm btn-success rounded-pill px-3 fw-bold" style="background: var(--sos-primary);">
+                + Generate Bills
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success py-2 px-3 mb-3" style="font-size: 13px;">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["WarningMessage"] != null)
+    {
+        <div class="alert alert-warning py-2 px-3 mb-3" style="font-size: 13px;">@TempData["WarningMessage"]</div>
+    }
+
+    <!-- Real Calculated Ledger Metrics -->
+    <div class="row g-2 mb-3 text-center">
+        <div class="col-12 col-sm-4">
+            <div class="bg-white border rounded-4 p-3 shadow-sm">
+                <span class="text-muted d-block" style="font-size: 11px;">TOTAL NET BILLED</span>
+                <strong style="font-size: 18px;">@MaintenanceController.FormatInr(Model.TotalBilledInr)</strong>
+            </div>
+        </div>
+        <div class="col-6 col-sm-4">
+            <div class="bg-white border rounded-4 p-3 shadow-sm">
+                <span class="text-muted d-block" style="font-size: 11px;">TOTAL COLLECTED</span>
+                <strong class="text-success" style="font-size: 18px;">@MaintenanceController.FormatInr(Model.TotalCollectedInr)</strong>
+            </div>
+        </div>
+        <div class="col-6 col-sm-4">
+            <div class="bg-white border rounded-4 p-3 shadow-sm">
+                <span class="text-muted d-block" style="font-size: 11px;">TOTAL OUTSTANDING</span>
+                <strong class="text-danger" style="font-size: 18px;">@MaintenanceController.FormatInr(Model.TotalOutstandingInr)</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Filter Pills -->
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <a asp-action="Admin" class="btn btn-sm @(string.IsNullOrEmpty(Model.SelectedStatusFilter) ? "btn-dark" : "btn-outline-secondary") rounded-pill">All</a>
+        <a asp-action="Admin" asp-route-statusFilter="unpaid" class="btn btn-sm @(Model.SelectedStatusFilter == "unpaid" ? "btn-secondary" : "btn-outline-secondary") rounded-pill">
+            Unpaid (@Model.UnpaidBillsCount)
+        </a>
+        <a asp-action="Admin" asp-route-statusFilter="partial" class="btn btn-sm @(Model.SelectedStatusFilter == "partial" ? "btn-warning text-dark" : "btn-outline-secondary") rounded-pill">
+            Partially Paid (@Model.PartiallyPaidBillsCount)
+        </a>
+        <a asp-action="Admin" asp-route-statusFilter="overdue" class="btn btn-sm @(Model.SelectedStatusFilter == "overdue" ? "btn-danger" : "btn-outline-danger") rounded-pill">
+            Overdue (@Model.OverdueBillsCount)
+        </a>
+        <a asp-action="Admin" asp-route-statusFilter="paid" class="btn btn-sm @(Model.SelectedStatusFilter == "paid" ? "btn-success" : "btn-outline-success") rounded-pill">
+            Paid (@Model.PaidBillsCount)
+        </a>
+    </div>
+
+    @if (!Model.Bills.Any())
+    {
+        <div class="bg-white border rounded-4 p-5 text-center">
+            <h5 class="fw-bold mb-1">No Bills in Selected View</h5>
+            <p class="text-muted mb-3" style="font-size: 13px;">Generate monthly maintenance bills for a flat or building to start tracking collections.</p>
+            <a asp-action="CreateBill" class="btn btn-sm btn-success rounded-pill px-4 fw-bold" style="background: var(--sos-primary);">Generate First Bill</a>
+        </div>
+    }
+    else
+    {
+        @foreach (var b in Model.Bills)
+        {
+            <div class="bg-white border rounded-4 p-3 mb-2 shadow-sm d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    <div class="d-flex align-items-center gap-1 mb-1">
+                        <span class="badge @(b.Status == MaintenanceBillStatus.Paid ? "bg-success" : b.Status == MaintenanceBillStatus.PartiallyPaid ? "bg-warning text-dark" : "bg-secondary")" style="font-size: 10px;">
+                            @b.Status
+                        </span>
+                        @if (b.IsOverdue)
+                        {
+                            <span class="badge bg-danger" style="font-size: 10px;">OVERDUE</span>
+                        }
+                        <strong style="font-size: 14px;">Flat @b.FlatDisplay</strong> — <span>@b.BillingPeriodDisplay</span>
+                        <small class="text-muted">(@b.BillNumber)</small>
+                    </div>
+                    <div style="font-size: 12px;">
+                        Billed: <strong>@MaintenanceController.FormatInr(b.NetBillAmountInr)</strong> •
+                        Paid: <strong class="text-success">@MaintenanceController.FormatInr(b.TotalPaidInr)</strong> •
+                        Due: <strong class="text-danger">@MaintenanceController.FormatInr(b.OutstandingBalanceInr)</strong>
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    @if (!b.IsVoid && b.OutstandingBalanceInr > 0)
+                    {
+                        <a asp-action="RecordPayment" asp-route-id="@b.Id" class="btn btn-sm btn-success rounded-pill px-3 fw-bold" style="font-size: 11px; background: var(--sos-primary);">
+                            + Record Payment
+                        </a>
+                    }
+                    <a asp-action="Details" asp-route-id="@b.Id" class="btn btn-sm btn-outline-dark rounded-pill px-3" style="font-size: 11px;">
+                        Ledger →
+                    </a>
+                </div>
+            </div>
+        }
+    }
+</div>
