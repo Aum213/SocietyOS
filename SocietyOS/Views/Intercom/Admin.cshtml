@@ -1,0 +1,108 @@
+﻿@model SocietyOS.ViewModels.AdminIntercomIndexViewModel
+@using SocietyOS.Models
+@using SocietyOS.Controllers
+@{
+    ViewData["Title"] = "Manage Intercom Directory";
+}
+
+<div class="home-container" style="max-width: 740px;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <span class="badge bg-dark mb-1" style="font-size: 10px;">ADMINISTRATION</span>
+            <h2 class="m-0 fw-bold" style="font-size: 22px;">Manage Intercom & Service Contacts</h2>
+        </div>
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill">Directory View</a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success py-2 px-3 mb-3" style="font-size: 13px;">@TempData["SuccessMessage"]</div>
+    }
+
+    <!-- Add New Contact Form -->
+    <div class="bg-white border rounded-4 p-4 shadow-sm mb-3">
+        <h5 class="fw-bold mb-3" style="font-size: 15px;">Add Society Service Contact</h5>
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+            <div class="row g-2 mb-3">
+                <div class="col-12 col-sm-4">
+                    <label asp-for="NewContact.DisplayName" class="form-label fw-bold" style="font-size: 12px;"></label>
+                    <input asp-for="NewContact.DisplayName" class="form-control form-control-sm" placeholder="e.g. Maintenance Plumber Desk" />
+                    <span asp-validation-for="NewContact.DisplayName" class="text-danger" style="font-size: 11px;"></span>
+                </div>
+                <div class="col-6 col-sm-4">
+                    <label asp-for="NewContact.Category" class="form-label fw-bold" style="font-size: 12px;"></label>
+                    <select asp-for="NewContact.Category" class="form-select form-select-sm">
+                        @foreach (var cat in Enum.GetValues<IntercomCategory>())
+                        {
+                            <option value="@cat">@IntercomController.FormatCategoryLabel(cat)</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-6 col-sm-4">
+                    <label asp-for="NewContact.PhoneNumber" class="form-label fw-bold" style="font-size: 12px;"></label>
+                    <input asp-for="NewContact.PhoneNumber" class="form-control form-control-sm" placeholder="e.g. 0281-2220103" />
+                    <span asp-validation-for="NewContact.PhoneNumber" class="text-danger" style="font-size: 11px;"></span>
+                </div>
+            </div>
+
+            <div class="row g-2 mb-3 align-items-center">
+                <div class="col-8 col-sm-6">
+                    <label asp-for="NewContact.Description" class="form-label fw-bold" style="font-size: 12px;"></label>
+                    <input asp-for="NewContact.Description" class="form-control form-control-sm" placeholder="e.g. Daily 9 AM – 6 PM" />
+                </div>
+                <div class="col-4 col-sm-2">
+                    <label asp-for="NewContact.DisplayOrder" class="form-label fw-bold" style="font-size: 12px;">Order</label>
+                    <input asp-for="NewContact.DisplayOrder" type="number" class="form-control form-control-sm" />
+                </div>
+                <div class="col-12 col-sm-4 pt-3">
+                    <div class="form-check">
+                        <input asp-for="NewContact.ShowOnEmergencySos" class="form-check-input" />
+                        <label asp-for="NewContact.ShowOnEmergencySos" class="form-check-label" style="font-size: 12px;">Show on SOS Page</label>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-sm btn-success rounded-pill px-4 py-2 fw-bold" style="background: var(--sos-primary);">
+                + Add Contact
+            </button>
+        </form>
+    </div>
+
+    <!-- Existing Contacts List -->
+    @foreach (var c in Model.Contacts)
+    {
+        <div class="bg-white border rounded-4 p-3 mb-2 shadow-sm d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+                <span class="badge @(c.IsActive ? "bg-success" : "bg-secondary") me-1" style="font-size: 10px;">
+                    @(c.IsActive ? "Active" : "Inactive")
+                </span>
+                <span class="badge bg-light text-dark border me-1" style="font-size: 10px;">@c.CategoryDisplay</span>
+                @if (c.ShowOnEmergencySos)
+                {
+                    <span class="badge bg-danger me-1" style="font-size: 10px;">SOS Page</span>
+                }
+                <strong style="font-size: 14px;">@c.DisplayName</strong> — <a href="tel:@c.PhoneNumber">@c.PhoneNumber</a>
+                @if (!string.IsNullOrEmpty(c.Description))
+                {
+                    <div class="text-muted" style="font-size: 11px;">@c.Description</div>
+                }
+            </div>
+
+            <div class="d-flex gap-2">
+                <a asp-action="Edit" asp-route-id="@c.Id" class="btn btn-sm btn-outline-dark rounded-pill px-3" style="font-size: 11px;">Edit</a>
+                <form asp-action="ToggleActive" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@c.Id" />
+                    <button type="submit" class="btn btn-sm @(c.IsActive ? "btn-outline-danger" : "btn-outline-success") rounded-pill px-3" style="font-size: 11px;">
+                        @(c.IsActive ? "Deactivate" : "Activate")
+                    </button>
+                </form>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

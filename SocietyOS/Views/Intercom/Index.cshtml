@@ -1,0 +1,90 @@
+﻿@model SocietyOS.ViewModels.IntercomDirectoryViewModel
+@using SocietyOS.Models
+@using SocietyOS.Controllers
+@{
+    ViewData["Title"] = "Intercom & Society Services Directory";
+}
+
+<div class="home-container" style="max-width: 660px;">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div>
+            <span class="badge bg-success mb-1" style="font-size: 10px; letter-spacing: 0.5px;">SOCIETY HELPLINES</span>
+            <h2 class="m-0 fw-bold" style="font-size: 22px;">Intercom Directory</h2>
+        </div>
+        <div class="d-flex gap-2">
+            @if (User.IsInRole("Administrator"))
+            {
+                <a asp-action="Admin" class="btn btn-sm btn-dark rounded-pill px-3 fw-semibold">Manage Directory</a>
+            }
+            <a asp-controller="Home" asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill">Home</a>
+        </div>
+    </div>
+
+    <!-- Search & Category Filter -->
+    <form method="get" asp-action="Index" class="bg-white border rounded-4 p-3 mb-3 shadow-sm">
+        <div class="row g-2 align-items-end">
+            <div class="col-12 col-sm-5">
+                <label class="form-label text-muted fw-semibold mb-1" style="font-size: 11px;">SEARCH CONTACT OR DESK</label>
+                <input type="search" name="q" value="@Model.SearchQuery" class="form-control form-control-sm" placeholder="Gate, plumber, office..." />
+            </div>
+            <div class="col-8 col-sm-5">
+                <label class="form-label text-muted fw-semibold mb-1" style="font-size: 11px;">DEPARTMENT CATEGORY</label>
+                <select name="category" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">All Society Services</option>
+                    @foreach (var cat in Enum.GetValues<IntercomCategory>())
+                    {
+                        <option value="@cat" selected="@(Model.SelectedCategory == cat)">@IntercomController.FormatCategoryLabel(cat)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-4 col-sm-2">
+                <button type="submit" class="btn btn-sm btn-dark w-100">Filter</button>
+            </div>
+        </div>
+    </form>
+
+    @if (!Model.Contacts.Any())
+    {
+        <div class="bg-white border rounded-4 p-5 text-center">
+            <div style="font-size: 36px; margin-bottom: 8px;">☎️</div>
+            <h5 class="fw-bold mb-1">No Contacts Found</h5>
+            <p class="text-muted m-0" style="font-size: 13px;">No active society service contacts match your current filter.</p>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex flex-column gap-2 mb-4">
+            @foreach (var item in Model.Contacts)
+            {
+                <article class="bg-white border rounded-4 p-3 shadow-sm d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div style="min-width: 0; flex: 1;">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge bg-light text-dark border" style="font-size: 10px;">
+                                @item.CategoryDisplay
+                            </span>
+                            @if (item.ShowOnEmergencySos)
+                            {
+                                <span class="badge bg-danger rounded-pill" style="font-size: 9px;">24×7 Priority</span>
+                            }
+                        </div>
+                        <h3 class="h6 fw-bold m-0" style="color: var(--sos-primary);">@item.DisplayName</h3>
+                        @if (!string.IsNullOrWhiteSpace(item.Description))
+                        {
+                            <p class="text-muted m-0 mt-1" style="font-size: 12px;">@item.Description</p>
+                        }
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(item.PhoneNumber))
+                    {
+                        <a href="tel:@item.PhoneNumber"
+                           class="btn btn-sm btn-success rounded-pill px-3 py-2 fw-bold"
+                           style="background: var(--sos-primary); white-space: nowrap;"
+                           aria-label="Call @item.DisplayName at @item.PhoneNumber">
+                            📞 Call @item.PhoneNumber
+                        </a>
+                    }
+                </article>
+            }
+        </div>
+    }
+</div>

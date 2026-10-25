@@ -200,10 +200,10 @@ namespace SocietyOS.Controllers
                     {
                         Id = "society-directory",
                         Title = "Intercom Directory",
-                        Subtitle = "Gate & Office Contacts",
+                        Subtitle = "Gate, Office & Maintenance",
                         BadgeText = "Active",
                         ActionCategory = "General",
-                        TargetUrl = "/Emergency",
+                        TargetUrl = "/Intercom",
                         IsPlannedFeature = false
                     },
                     new QuickActionItem

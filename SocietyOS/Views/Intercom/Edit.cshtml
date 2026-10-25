@@ -1,0 +1,72 @@
+﻿@model SocietyOS.ViewModels.IntercomContactFormViewModel
+@using SocietyOS.Models
+@using SocietyOS.Controllers
+@{
+    ViewData["Title"] = "Edit Intercom Contact";
+}
+
+<div class="home-container" style="max-width: 560px;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2 class="m-0 fw-bold" style="font-size: 22px;">Edit Contact</h2>
+        <a asp-action="Admin" class="btn btn-sm btn-outline-secondary rounded-pill">Cancel</a>
+    </div>
+
+    <div class="bg-white border rounded-4 p-4 shadow-sm">
+        <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+            <input type="hidden" asp-for="Id" />
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2" style="font-size: 13px;"></div>
+
+            <div class="mb-3">
+                <label asp-for="DisplayName" class="form-label fw-bold" style="font-size: 13px;"></label>
+                <input asp-for="DisplayName" class="form-control" />
+                <span asp-validation-for="DisplayName" class="text-danger" style="font-size: 12px;"></span>
+            </div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label asp-for="Category" class="form-label fw-bold" style="font-size: 13px;"></label>
+                    <select asp-for="Category" class="form-select">
+                        @foreach (var cat in Enum.GetValues<IntercomCategory>())
+                        {
+                            <option value="@cat">@IntercomController.FormatCategoryLabel(cat)</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-6">
+                    <label asp-for="PhoneNumber" class="form-label fw-bold" style="font-size: 13px;"></label>
+                    <input asp-for="PhoneNumber" class="form-control" />
+                    <span asp-validation-for="PhoneNumber" class="text-danger" style="font-size: 12px;"></span>
+                </div>
+            </div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-8">
+                    <label asp-for="Description" class="form-label fw-bold" style="font-size: 12px;"></label>
+                    <input asp-for="Description" class="form-control" />
+                </div>
+                <div class="col-4">
+                    <label asp-for="DisplayOrder" class="form-label fw-bold" style="font-size: 12px;"></label>
+                    <input asp-for="DisplayOrder" type="number" class="form-control" />
+                </div>
+            </div>
+
+            <div class="form-check mb-2">
+                <input asp-for="IsActive" class="form-check-input" />
+                <label asp-for="IsActive" class="form-check-label fw-semibold" style="font-size: 13px;"></label>
+            </div>
+
+            <div class="form-check mb-4">
+                <input asp-for="ShowOnEmergencySos" class="form-check-input" />
+                <label asp-for="ShowOnEmergencySos" class="form-check-label fw-semibold" style="font-size: 13px;"></label>
+            </div>
+
+            <button type="submit" class="btn btn-dark w-100 py-2 fw-bold rounded-pill">
+                Save Changes
+            </button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

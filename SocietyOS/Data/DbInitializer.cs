@@ -327,28 +327,62 @@ namespace SocietyOS.Data
                 await context.SaveChangesAsync();
             }
 
-            // 9. Seed Safe Default Society Emergency Desk Contacts
-            if (primaryAdmin != null && !await context.SocietyEmergencyContacts.AnyAsync())
+            // 9. Seed Safe Default Society Intercom & Emergency Contacts
+            if (primaryAdmin != null && !await context.SocietyEmergencyContacts.AnyAsync(c => c.Category == IntercomCategory.Maintenance))
             {
                 var now = DateTime.UtcNow;
+                if (!await context.SocietyEmergencyContacts.AnyAsync())
+                {
+                    context.SocietyEmergencyContacts.AddRange(
+                        new SocietyEmergencyContact
+                        {
+                            DisplayName = "Main Security Gate 1 Desk (Demo)",
+                            Category = IntercomCategory.SecurityDesk,
+                            PhoneNumber = "0281-2220101",
+                            Description = "24×7 On-Duty Guard Desk at Main Entrance",
+                            IsActive = true,
+                            ShowOnEmergencySos = true,
+                            DisplayOrder = 1,
+                            UpdatedByAdminId = primaryAdmin.Id,
+                            UpdatedAtUtc = now
+                        },
+                        new SocietyEmergencyContact
+                        {
+                            DisplayName = "Society Management Office (Demo)",
+                            Category = IntercomCategory.ManagementOffice,
+                            PhoneNumber = "0281-2220102",
+                            Description = "Facility Manager & Billing Inquiries (10 AM – 6 PM)",
+                            IsActive = true,
+                            ShowOnEmergencySos = true,
+                            DisplayOrder = 2,
+                            UpdatedByAdminId = primaryAdmin.Id,
+                            UpdatedAtUtc = now
+                        }
+                    );
+                }
+
                 context.SocietyEmergencyContacts.AddRange(
                     new SocietyEmergencyContact
                     {
-                        DisplayName = "Main Security Gate 1 Desk (Demo)",
-                        PhoneNumber = "0281-2220101",
-                        Description = "24×7 On-Duty Guard Desk at Main Entrance",
+                        DisplayName = "Maintenance & Plumbing Desk (Demo)",
+                        Category = IntercomCategory.Maintenance,
+                        PhoneNumber = "0281-2220103",
+                        Description = "Common-area electrical, water pump, and lift maintenance desk (9 AM – 7 PM)",
                         IsActive = true,
-                        DisplayOrder = 1,
+                        ShowOnEmergencySos = false,
+                        DisplayOrder = 3,
                         UpdatedByAdminId = primaryAdmin.Id,
                         UpdatedAtUtc = now
                     },
                     new SocietyEmergencyContact
                     {
-                        DisplayName = "Society Management Office (Demo)",
-                        PhoneNumber = "0281-2220102",
-                        Description = "Facility Manager & Emergency Maintenance Desk",
+                        DisplayName = "Housekeeping & Waste Collection Supervisor (Demo)",
+                        Category = IntercomCategory.Housekeeping,
+                        PhoneNumber = "0281-2220104",
+                        Description = "Corridor cleaning and daily waste collection coordination (8 AM – 4 PM)",
                         IsActive = true,
-                        DisplayOrder = 2,
+                        ShowOnEmergencySos = false,
+                        DisplayOrder = 4,
                         UpdatedByAdminId = primaryAdmin.Id,
                         UpdatedAtUtc = now
                     }

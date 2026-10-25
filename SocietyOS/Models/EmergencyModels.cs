@@ -22,10 +22,18 @@ namespace SocietyOS.Models
         Cancelled = 4
     }
 
-    // Truthful representation of alert delivery capability
     public enum EmergencyNotificationStatus
     {
         InAppQueueOnly = 0
+    }
+
+    public enum IntercomCategory
+    {
+        SecurityDesk = 0,
+        ManagementOffice = 1,
+        Maintenance = 2,
+        Housekeeping = 3,
+        OtherSocietyService = 4
     }
 
     public class EmergencyIncident
@@ -33,7 +41,7 @@ namespace SocietyOS.Models
         public int Id { get; set; }
 
         [Required, MaxLength(30)]
-        public string ReferenceCode { get; set; } = string.Empty; // e.g. "SOS-20261025-4819"
+        public string ReferenceCode { get; set; } = string.Empty;
 
         [Required]
         public string ReporterUserId { get; set; } = string.Empty;
@@ -47,7 +55,6 @@ namespace SocietyOS.Models
 
         public EmergencyCategory Category { get; set; } = EmergencyCategory.SecurityOrSafety;
 
-        // Optional so a resident in distress is never delayed by mandatory typing
         [MaxLength(500)]
         public string? Description { get; set; }
 
@@ -111,6 +118,8 @@ namespace SocietyOS.Models
         [Required, MaxLength(100)]
         public string DisplayName { get; set; } = string.Empty;
 
+        public IntercomCategory Category { get; set; } = IntercomCategory.SecurityDesk;
+
         [Required, MaxLength(25)]
         public string PhoneNumber { get; set; } = string.Empty;
 
@@ -118,6 +127,9 @@ namespace SocietyOS.Models
         public string? Description { get; set; }
 
         public bool IsActive { get; set; } = true;
+
+        // If true, this contact also appears on the Emergency SOS screen
+        public bool ShowOnEmergencySos { get; set; } = true;
 
         [Range(1, 50)]
         public int DisplayOrder { get; set; } = 1;
