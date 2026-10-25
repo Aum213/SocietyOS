@@ -1,0 +1,145 @@
+﻿@{
+    ViewData["Title"] = "More — SocietyOS Directory & Hub";
+    var isAdmin = User.IsInRole("Administrator");
+    var isGuard = User.IsInRole("SecurityGuard");
+}
+
+<div class="home-container" style="max-width: 640px;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <span class="badge bg-success mb-1" style="font-size: 10px; letter-spacing: 0.5px;">COMMUNITY HUB</span>
+            <h2 class="m-0 fw-bold" style="font-size: 22px;">More & Services</h2>
+        </div>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill">
+            Home
+        </a>
+    </div>
+
+    <!-- 1. Active Core Features -->
+    <div class="bg-white border rounded-4 p-3 shadow-sm mb-3">
+        <div class="text-muted fw-bold mb-2 px-1" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">
+            Active Community Workflows
+        </div>
+
+        <div class="list-group list-group-flush">
+            <a asp-controller="Announcements" asp-action="Index" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3 px-2">
+                <div>
+                    <div class="fw-bold" style="font-size: 14px;">📢 Notices & Announcements</div>
+                    <small class="text-muted">Official society circulars, urgent alerts, and read receipts</small>
+                </div>
+                <span class="badge bg-success rounded-pill">Active</span>
+            </a>
+
+            <a asp-controller="Issues" asp-action="Index" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3 px-2">
+                <div>
+                    <div class="fw-bold" style="font-size: 14px;">🛠️ Community Issues Feed</div>
+                    <small class="text-muted">Browse reported problems, vote to prioritize, and comment</small>
+                </div>
+                <span class="badge bg-success rounded-pill">Active</span>
+            </a>
+
+            <a asp-controller="Issues" asp-action="Create" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3 px-2">
+                <div>
+                    <div class="fw-bold" style="font-size: 14px;">➕ Report a New Issue</div>
+                    <small class="text-muted">Submit a flat, building, or society maintenance problem</small>
+                </div>
+                <span class="badge bg-success rounded-pill">Active</span>
+            </a>
+
+            <a asp-controller="Visitors" asp-action="Index" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3 px-2">
+                <div>
+                    <div class="fw-bold" style="font-size: 14px;">🚪 @(isGuard ? "Guard Visitor Registration" : "Smart Visitor Approval Inbox")</div>
+                    <small class="text-muted">@(isGuard ? "Log arriving visitors and capture gate photos" : "Approve or deny pending visitors for your flat")</small>
+                </div>
+                <span class="badge bg-success rounded-pill">Active</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 2. Administrator Consoles (Visible only to Administrators) -->
+    @if (isAdmin)
+    {
+        <div class="bg-white border border-dark rounded-4 p-3 shadow-sm mb-3">
+            <div class="fw-bold mb-2 px-1" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">
+                Administrator Management Consoles
+            </div>
+
+            <div class="list-group list-group-flush">
+                <a asp-controller="Announcements" asp-action="Admin" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2 px-2">
+                    <div>
+                        <div class="fw-bold" style="font-size: 13px;">Manage Announcements</div>
+                        <small class="text-muted">Create drafts, publish urgent alerts, pin, or archive notices</small>
+                    </div>
+                    <span class="badge bg-dark rounded-pill">Admin</span>
+                </a>
+
+                <a asp-controller="Issues" asp-action="Admin" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2 px-2">
+                    <div>
+                        <div class="fw-bold" style="font-size: 13px;">Issue Triage & Status Console</div>
+                        <small class="text-muted">Review reporters, transition statuses, and add audit notes</small>
+                    </div>
+                    <span class="badge bg-dark rounded-pill">Admin</span>
+                </a>
+
+                <a asp-controller="Visitors" asp-action="Register" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2 px-2">
+                    <div>
+                        <div class="fw-bold" style="font-size: 13px;">Gate Registration Form</div>
+                        <small class="text-muted">Open the security guard visitor intake screen</small>
+                    </div>
+                    <span class="badge bg-dark rounded-pill">Admin</span>
+                </a>
+            </div>
+        </div>
+    }
+
+    <!-- 3. Planned Modules (Explicitly Identified) -->
+    <div class="bg-white border rounded-4 p-3 shadow-sm mb-3">
+        <div class="text-muted fw-bold mb-2 px-1" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">
+            Planned Future Phases
+        </div>
+
+        <div class="list-group list-group-flush" style="font-size: 13px;">
+            <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-2 text-muted">
+                <span>🚨 Emergency SOS Alert Routing</span>
+                <span class="badge bg-light text-secondary border">Planned</span>
+            </div>
+            <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-2 text-muted">
+                <span>🧹 Daily Help (Maid, Cook & Driver Attendance)</span>
+                <span class="badge bg-light text-secondary border">Planned</span>
+            </div>
+            <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-2 text-muted">
+                <span>🎾 Amenity Slot Booking (Clubhouse & Courts)</span>
+                <span class="badge bg-light text-secondary border">Planned</span>
+            </div>
+            <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-2 text-muted">
+                <span>💳 Maintenance Dues & Billing Ledger</span>
+                <span class="badge bg-light text-secondary border">Planned</span>
+            </div>
+            <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-2 text-muted">
+                <span>☎️ Verified Intercom & Committee Directory</span>
+                <span class="badge bg-light text-secondary border">Planned</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Account & Session -->
+    <div class="bg-white border rounded-4 p-3 shadow-sm mb-4 d-flex justify-content-between align-items-center">
+        <a asp-controller="Home" asp-action="Privacy" class="text-decoration-none fw-semibold" style="font-size: 13px; color: var(--sos-text-secondary);">
+            Privacy & 48-Hour Data Retention Policy
+        </a>
+        @if (User.Identity?.IsAuthenticated ?? false)
+        {
+            <form asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })" method="post" class="m-0">
+                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-semibold">
+                    Sign Out
+                </button>
+            </form>
+        }
+        else
+        {
+            <a asp-area="Identity" asp-page="/Account/Login" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-semibold">
+                Sign In
+            </a>
+        }
+    </div>
+</div>

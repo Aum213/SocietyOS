@@ -79,7 +79,6 @@ namespace SocietyOS.Controllers
                 }
             }
 
-            // Query live published, unexpired announcements from database
             var nowUtc = DateTime.UtcNow;
             var eligibleNoticesQuery = _context.Announcements
                 .AsNoTracking()
@@ -107,6 +106,8 @@ namespace SocietyOS.Controllers
                 })
                 .ToListAsync();
 
+            var isGuard = User.IsInRole("SecurityGuard");
+
             var model = new HomeViewModel
             {
                 IsAuthenticated = isAuth,
@@ -118,7 +119,6 @@ namespace SocietyOS.Controllers
                 PhoneNumber = "+91 98765 43210",
                 DailyMaxim = _maximService.GetTodaysMaxim(),
 
-                // 6 Core Quick Actions (Features A, B, and C are all active!)
                 PrimaryActions = new List<QuickActionItem>
                 {
                     new QuickActionItem
@@ -126,39 +126,41 @@ namespace SocietyOS.Controllers
                         Id = "sos",
                         Title = "Emergency SOS",
                         Subtitle = "Guard & Society Alert",
-                        BadgeText = "Safety",
+                        BadgeText = "Planned",
                         ActionCategory = "SOS",
+                        TargetUrl = "#sos",
                         IsPlannedFeature = true,
-                        PlannedPhaseNotice = "Emergency SOS will alert on-duty guards and designated emergency contacts."
+                        PlannedPhaseNotice = "Emergency SOS is a planned safety module that will dispatch urgent alerts to on-duty guards and designated contacts in a future phase."
                     },
                     new QuickActionItem
                     {
                         Id = "daily-help",
                         Title = "Daily Help",
                         Subtitle = "Maid, Cook & Driver",
-                        BadgeText = "Staff",
+                        BadgeText = "Planned",
                         ActionCategory = "Community",
+                        TargetUrl = "#daily-help",
                         IsPlannedFeature = true,
-                        PlannedPhaseNotice = "Staff entry records and attendance tracking are planned for future updates."
+                        PlannedPhaseNotice = "Daily Help attendance logs and domestic staff entry notifications are planned for a future phase."
                     },
                     new QuickActionItem
                     {
                         Id = "visitor-pass",
-                        Title = "Visitor Pass",
-                        Subtitle = "Approve & View Gate Requests",
+                        Title = isGuard ? "Register Visitor" : "Visitor Pass",
+                        Subtitle = isGuard ? "Gate Visitor Intake" : "Approve & View Gate Requests",
                         BadgeText = "Active",
                         ActionCategory = "Security",
-                        TargetUrl = User.IsInRole("SecurityGuard") ? "/Visitors/Register" : "/Visitors/Pending",
+                        TargetUrl = "/Visitors",
                         IsPlannedFeature = false
                     },
                     new QuickActionItem
                     {
                         Id = "report-issue",
-                        Title = "Report Issue",
-                        Subtitle = "Community Problems & Votes",
+                        Title = "Report an Issue",
+                        Subtitle = "Submit a Society Problem",
                         BadgeText = "Active",
                         ActionCategory = "Community",
-                        TargetUrl = "/Issues",
+                        TargetUrl = "/Issues/Create",
                         IsPlannedFeature = false
                     },
                     new QuickActionItem
@@ -166,10 +168,11 @@ namespace SocietyOS.Controllers
                         Id = "book-amenity",
                         Title = "Book Amenity",
                         Subtitle = "Clubhouse & Court",
-                        BadgeText = "Facility",
+                        BadgeText = "Planned",
                         ActionCategory = "Facility",
+                        TargetUrl = "#book-amenity",
                         IsPlannedFeature = true,
-                        PlannedPhaseNotice = "Amenity slot reservations will be introduced in a future phase."
+                        PlannedPhaseNotice = "Amenity slot booking for the clubhouse, gym, and badminton court is planned for a future phase."
                     },
                     new QuickActionItem
                     {
@@ -183,46 +186,58 @@ namespace SocietyOS.Controllers
                     }
                 },
 
-                // Expandable supplementary actions
                 ExpandedActions = new List<QuickActionItem>
                 {
                     new QuickActionItem
                     {
                         Id = "pay-dues",
                         Title = "Maintenance Dues",
-                        Subtitle = "October Bill: ₹3,200",
-                        BadgeText = "Bill",
+                        Subtitle = "Monthly Society Billing",
+                        BadgeText = "Planned",
                         ActionCategory = "Facility",
+                        TargetUrl = "#pay-dues",
                         IsPlannedFeature = true,
-                        PlannedPhaseNotice = "Society maintenance ledger integration is scheduled for future billing milestones."
+                        PlannedPhaseNotice = "Society maintenance billing and receipt generation are planned for a future phase."
                     },
                     new QuickActionItem
                     {
                         Id = "society-directory",
-                        Title = "Intercom & Directory",
-                        Subtitle = "Society Offices & Help",
-                        BadgeText = "Info",
+                        Title = "Intercom Directory",
+                        Subtitle = "Gate & Office Contacts",
+                        BadgeText = "Planned",
                         ActionCategory = "General",
+                        TargetUrl = "#intercom",
                         IsPlannedFeature = true,
-                        PlannedPhaseNotice = "Verified society directory will be available once all resident profiles are populated."
+                        PlannedPhaseNotice = "The verified intercom and committee contact directory is planned for a future phase."
                     },
                     new QuickActionItem
                     {
                         Id = "gate-pass",
-                        Title = "Gate Register (Guard)",
-                        Subtitle = "Log Arriving Visitor",
-                        BadgeText = "Gate",
+                        Title = "Gate Desk",
+                        Subtitle = isGuard ? "Register Arriving Visitor" : "Guard Gate Registration",
+                        BadgeText = isGuard || User.IsInRole("Administrator") ? "Active" : "Guard Only",
                         ActionCategory = "Security",
-                        TargetUrl = "/Visitors/Register",
+                        TargetUrl = isGuard || User.IsInRole("Administrator") ? "/Visitors/Register" : "/Visitors",
                         IsPlannedFeature = false
                     }
                 },
 
-                // Populated with live published announcements from DB
                 RecentUpdates = latestNotices
             };
 
             return View(model);
+        }
+
+        [HttpGet]
+        public IActionResult Market()
+        {
+            return View();
+        }
+
+        [HttpGet]
+        public IActionResult More()
+        {
+            return View();
         }
 
         public IActionResult Privacy()

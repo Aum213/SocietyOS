@@ -41,6 +41,21 @@ namespace SocietyOS.Controllers
         }
 
         // ==================================================================
+        // GET: /Visitors (Role-Aware Gate Landing Entry Point)
+        // ==================================================================
+        [HttpGet]
+        public IActionResult Index()
+        {
+            if (User.IsInRole("SecurityGuard"))
+            {
+                return RedirectToAction(nameof(Register));
+            }
+
+            return RedirectToAction(nameof(Pending));
+        }
+
+
+        // ==================================================================
         // GET: /Visitors/Pending
         // GET: /Visitors/Approved
         // GET: /Visitors/Rejected
