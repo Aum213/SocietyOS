@@ -105,6 +105,7 @@ namespace SocietyOS.ViewModels
         public string? InternalReporterEmail { get; set; }
         public string? InternalReporterFlat { get; set; }
         public List<IssueStatusHistoryItemViewModel> StatusHistory { get; set; } = new();
+        public bool CanDelete { get; set; }
     }
 
     public class IssueCommentItemViewModel

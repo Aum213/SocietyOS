@@ -43,7 +43,6 @@ namespace SocietyOS.Models
 
         public IssueCategory Category { get; set; } = IssueCategory.Other;
 
-        // Concurrency token prevents simultaneous conflicting admin status updates
         [ConcurrencyCheck]
         public IssueStatus Status { get; set; } = IssueStatus.Reported;
 
@@ -52,7 +51,6 @@ namespace SocietyOS.Models
         [MaxLength(150)]
         public string? LocationDetails { get; set; }
 
-        // Internal reporter identity retained for integrity & admin review; hidden from residents
         [Required]
         public string ReporterUserId { get; set; } = string.Empty;
         public virtual ApplicationUser ReporterUser { get; set; } = null!;
@@ -73,6 +71,11 @@ namespace SocietyOS.Models
         public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
         public DateTime? ResolvedAtUtc { get; set; }
 
+        // Soft-delete fields preserving vote, comment, and status-history integrity
+        public bool IsDeleted { get; set; } = false;
+        public DateTime? DeletedAtUtc { get; set; }
+        public string? DeletedByUserId { get; set; }
+
         public virtual ICollection<IssueVote> Votes { get; set; } = new List<IssueVote>();
         public virtual ICollection<IssueComment> Comments { get; set; } = new List<IssueComment>();
         public virtual ICollection<IssueStatusHistory> StatusHistory { get; set; } = new List<IssueStatusHistory>();
@@ -89,7 +92,6 @@ namespace SocietyOS.Models
         public string VoterUserId { get; set; } = string.Empty;
         public virtual ApplicationUser VoterUser { get; set; } = null!;
 
-        // +1 for Upvote, -1 for Downvote
         [Range(-1, 1)]
         public int VoteValue { get; set; }
 
@@ -128,7 +130,6 @@ namespace SocietyOS.Models
         public string ChangedByAdminId { get; set; } = string.Empty;
         public virtual ApplicationUser ChangedByAdmin { get; set; } = null!;
 
-        // Strictly internal management note; never exposed in resident views
         [MaxLength(1000)]
         public string? InternalManagementNote { get; set; }
 

@@ -383,7 +383,14 @@ namespace SocietyOS.Controllers
             var query = baseQuery.AsQueryable();
             if (status.HasValue)
             {
-                query = query.Where(d => d.Status == status.Value);
+                if (status.Value == DailyHelpListingStatus.Inactive || status.Value == DailyHelpListingStatus.Rejected)
+                {
+                    query = query.Where(d => d.Status == DailyHelpListingStatus.Inactive || d.Status == DailyHelpListingStatus.Rejected);
+                }
+                else
+                {
+                    query = query.Where(d => d.Status == status.Value);
+                }
             }
 
             if (category.HasValue)

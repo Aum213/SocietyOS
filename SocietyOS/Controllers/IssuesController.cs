@@ -90,6 +90,7 @@ namespace SocietyOS.Controllers
 
             var query = _context.CommunityIssues
                 .AsNoTracking()
+                .Where(i => !i.IsDeleted)
                 .Include(i => i.Building)
                 .AsQueryable();
 
@@ -107,7 +108,6 @@ namespace SocietyOS.Controllers
             var totalPages = Math.Max(1, (int)Math.Ceiling(totalIssues / (double)PageSize));
             page = Math.Min(page, totalPages);
 
-            // Server-side sorting by net community votes or creation timestamp
             if (sort == "recent")
             {
                 query = query.OrderByDescending(i => i.CreatedAtUtc);
@@ -181,7 +181,7 @@ namespace SocietyOS.Controllers
         }
 
         // ==================================================================
-        // GET: /Issues/Create (Report an Issue)
+        // GET & POST: /Issues/Create
         // ==================================================================
         [HttpGet]
         public async Task<IActionResult> Create(CancellationToken ct = default)
@@ -202,9 +202,6 @@ namespace SocietyOS.Controllers
             return View(model);
         }
 
-        // ==================================================================
-        // POST: /Issues/Create
-        // ==================================================================
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(CreateIssueViewModel model, CancellationToken ct = default)
@@ -227,7 +224,6 @@ namespace SocietyOS.Controllers
 
             if (model.LocationScope == IssueLocationScope.FlatSpecific)
             {
-                // Server-enforced flat association: always bind to the resident's own verified flat
                 targetBuildingId = resident.Flat.BuildingId;
                 targetFlatId = resident.FlatId;
             }
@@ -315,6 +311,7 @@ namespace SocietyOS.Controllers
 
             var issue = await _context.CommunityIssues
                 .AsNoTracking()
+                .Where(i => !i.IsDeleted)
                 .Include(i => i.Building)
                 .Include(i => i.Flat)
                     .ThenInclude(f => f != null ? f.Building : null)
@@ -331,7 +328,6 @@ namespace SocietyOS.Controllers
                 .Select(v => v.VoteValue)
                 .FirstOrDefaultAsync(ct);
 
-            // Identify which commenters are administrators so official responses stand out without leaking resident identities
             var adminRoleId = await _context.Roles
                 .Where(r => r.Name == "Administrator")
                 .Select(r => r.Id)
@@ -364,6 +360,8 @@ namespace SocietyOS.Controllers
                 })
                 .ToList();
 
+            var isOwner = issue.ReporterUserId == currentUserId;
+
             var viewModel = new IssueDetailsViewModel
             {
                 Id = issue.Id,
@@ -386,7 +384,8 @@ namespace SocietyOS.Controllers
                 NetVotes = upvotes - downvotes,
                 CurrentUserVote = userVote,
                 Comments = commentItems,
-                IsAdmin = isAdmin
+                IsAdmin = isAdmin,
+                CanDelete = isOwner || isAdmin
             };
 
             if (isAdmin)
@@ -422,7 +421,54 @@ namespace SocietyOS.Controllers
         }
 
         // ==================================================================
-        // POST: /Issues/Vote (Upvote, Downvote, Change, or Remove Vote)
+        // POST: /Issues/Delete (Owner Resident or Administrator Only)
+        // ==================================================================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id, CancellationToken ct = default)
+        {
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(currentUserId)) return Forbid();
+
+            var isAdmin = User.IsInRole("Administrator");
+            if (!isAdmin)
+            {
+                var resident = await GetVerifiedResidentProfileAsync(ct);
+                if (resident == null) return Forbid();
+            }
+
+            var issue = await _context.CommunityIssues
+                .FirstOrDefaultAsync(i => i.Id == id && !i.IsDeleted, ct);
+
+            if (issue == null) return NotFound();
+
+            // Strict server-side ownership & role check
+            if (!isAdmin && issue.ReporterUserId != currentUserId)
+            {
+                return NotFound();
+            }
+
+            var oldPhotoKey = issue.PhotoStorageKey;
+
+            issue.IsDeleted = true;
+            issue.DeletedAtUtc = DateTime.UtcNow;
+            issue.DeletedByUserId = currentUserId;
+            issue.PhotoStorageKey = null;
+            issue.UpdatedAtUtc = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync(ct);
+
+            if (!string.IsNullOrEmpty(oldPhotoKey))
+            {
+                await _photoStorage.DeletePhotoAsync(oldPhotoKey, ct);
+            }
+
+            TempData["SuccessMessage"] = $"Issue '{issue.Title}' has been deleted.";
+            return RedirectToAction(isAdmin ? nameof(Admin) : nameof(Index));
+        }
+
+        // ==================================================================
+        // POST: /Issues/Vote
         // ==================================================================
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -440,7 +486,8 @@ namespace SocietyOS.Controllers
             }
 
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-            var issueExists = await _context.CommunityIssues.AnyAsync(i => i.Id == input.IssueId, ct);
+            var issueExists = await _context.CommunityIssues
+                .AnyAsync(i => i.Id == input.IssueId && !i.IsDeleted, ct);
             if (!issueExists) return NotFound();
 
             var existingVote = await _context.IssueVotes
@@ -461,12 +508,10 @@ namespace SocietyOS.Controllers
                 }
                 else if (existingVote.VoteValue == input.VoteValue)
                 {
-                    // Tapping the same active vote button removes the user's vote
                     _context.IssueVotes.Remove(existingVote);
                 }
                 else
                 {
-                    // Tapping the opposite button flips the vote
                     existingVote.VoteValue = input.VoteValue;
                     existingVote.UpdatedAtUtc = DateTime.UtcNow;
                 }
@@ -475,7 +520,6 @@ namespace SocietyOS.Controllers
             }
             catch (DbUpdateException)
             {
-                // Safely absorb race-condition duplicate inserts caught by the unique index
             }
 
             if (!string.IsNullOrEmpty(input.ReturnUrl) && Url.IsLocalUrl(input.ReturnUrl))
@@ -506,7 +550,8 @@ namespace SocietyOS.Controllers
                 return RedirectToAction(nameof(Details), new { id = input.IssueId });
             }
 
-            var issueExists = await _context.CommunityIssues.AnyAsync(i => i.Id == input.IssueId, ct);
+            var issueExists = await _context.CommunityIssues
+                .AnyAsync(i => i.Id == input.IssueId && !i.IsDeleted, ct);
             if (!issueExists) return NotFound();
 
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
@@ -525,7 +570,7 @@ namespace SocietyOS.Controllers
         }
 
         // ==================================================================
-        // GET: /Issues/Admin (Administrator Issue Management Console)
+        // GET: /Issues/Admin
         // ==================================================================
         [Authorize(Roles = "Administrator")]
         [HttpGet]
@@ -540,6 +585,7 @@ namespace SocietyOS.Controllers
             page = Math.Max(1, page);
             var query = _context.CommunityIssues
                 .AsNoTracking()
+                .Where(i => !i.IsDeleted)
                 .Include(i => i.Building)
                 .Include(i => i.Flat)
                     .ThenInclude(f => f != null ? f.Building : null)
@@ -641,7 +687,7 @@ namespace SocietyOS.Controllers
         }
 
         // ==================================================================
-        // POST: /Issues/UpdateStatus (Admin Workflow & Audit Log)
+        // POST: /Issues/UpdateStatus
         // ==================================================================
         [Authorize(Roles = "Administrator")]
         [HttpPost]
@@ -654,7 +700,8 @@ namespace SocietyOS.Controllers
                 return RedirectToAction(nameof(Details), new { id = input.IssueId });
             }
 
-            var issue = await _context.CommunityIssues.FirstOrDefaultAsync(i => i.Id == input.IssueId, ct);
+            var issue = await _context.CommunityIssues
+                .FirstOrDefaultAsync(i => i.Id == input.IssueId && !i.IsDeleted, ct);
             if (issue == null) return NotFound();
 
             var previousStatus = issue.Status;
@@ -666,7 +713,6 @@ namespace SocietyOS.Controllers
                 return RedirectToAction(nameof(Details), new { id = input.IssueId });
             }
 
-            // Enforce valid progression: Reported -> Verified -> InProgress -> Resolved (or deliberate reopen from Resolved to InProgress)
             bool isValidTransition = (previousStatus, newStatus) switch
             {
                 (IssueStatus.Reported, IssueStatus.Verified) => true,
@@ -675,8 +721,8 @@ namespace SocietyOS.Controllers
                 (IssueStatus.Verified, IssueStatus.InProgress) => true,
                 (IssueStatus.Verified, IssueStatus.Resolved) => true,
                 (IssueStatus.InProgress, IssueStatus.Resolved) => true,
-                (IssueStatus.Resolved, IssueStatus.InProgress) => true, // Reopening a resolved issue
-                _ when previousStatus == newStatus => true, // Updating note/summary in-place
+                (IssueStatus.Resolved, IssueStatus.InProgress) => true,
+                _ when previousStatus == newStatus => true,
                 _ => false
             };
 
@@ -734,7 +780,7 @@ namespace SocietyOS.Controllers
         }
 
         // ==================================================================
-        // GET: /Issues/Photo/{id} (Authorized Issue Photo Streaming)
+        // GET: /Issues/Photo/{id}
         // ==================================================================
         [HttpGet]
         public async Task<IActionResult> Photo(int id, CancellationToken ct = default)
@@ -748,7 +794,7 @@ namespace SocietyOS.Controllers
 
             var issue = await _context.CommunityIssues
                 .AsNoTracking()
-                .FirstOrDefaultAsync(i => i.Id == id, ct);
+                .FirstOrDefaultAsync(i => i.Id == id && !i.IsDeleted, ct);
 
             if (issue == null || string.IsNullOrEmpty(issue.PhotoStorageKey))
             {

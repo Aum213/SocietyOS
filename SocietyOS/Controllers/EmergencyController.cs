@@ -7,8 +7,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using SocietyOS.Data;
+using SocietyOS.Hubs;
 using SocietyOS.Models;
 using SocietyOS.Services;
 using SocietyOS.ViewModels;
@@ -20,11 +23,19 @@ namespace SocietyOS.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly ISocietyTimeZoneService _tz;
+        private readonly IHubContext<EmergencySosHub> _sosHub;
+        private readonly ILogger<EmergencyController> _logger;
 
-        public EmergencyController(ApplicationDbContext context, ISocietyTimeZoneService tz)
+        public EmergencyController(
+            ApplicationDbContext context,
+            ISocietyTimeZoneService tz,
+            IHubContext<EmergencySosHub> sosHub,
+            ILogger<EmergencyController> logger)
         {
             _context = context;
             _tz = tz;
+            _sosHub = sosHub;
+            _logger = logger;
         }
 
         private async Task<ResidentProfile?> GetVerifiedResidentProfileAsync(CancellationToken ct = default)
@@ -66,7 +77,6 @@ namespace SocietyOS.Controllers
             var isAdmin = User.IsInRole("Administrator");
             var resident = await GetVerifiedResidentProfileAsync(ct);
 
-            // If a Security Guard opens /Emergency and is not a resident, route straight to Responder Queue
             if (isGuard && resident == null)
             {
                 return RedirectToAction(nameof(Queue));
@@ -81,7 +91,7 @@ namespace SocietyOS.Controllers
 
             var activeContacts = await _context.SocietyEmergencyContacts
                 .AsNoTracking()
-                .Where(c => c.IsActive)
+                .Where(c => c.IsActive && c.ShowOnEmergencySos)
                 .OrderBy(c => c.DisplayOrder)
                 .ThenBy(c => c.DisplayName)
                 .Select(c => new EmergencyContactItemViewModel
@@ -151,8 +161,6 @@ namespace SocietyOS.Controllers
 
             var nowUtc = _tz.UtcNow;
 
-            // Server-side duplicate submission guard: if the same resident submitted an active incident
-            // of the same category within the last 60 seconds, redirect to that existing incident.
             var recentDuplicate = await _context.EmergencyIncidents
                 .AsNoTracking()
                 .Where(e => e.ReporterUserId == resident.UserId &&
@@ -204,6 +212,29 @@ namespace SocietyOS.Controllers
             await _context.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);
 
+            try
+            {
+                var localTimeStr = _tz.ToLocalTime(incident.CreatedAtUtc).ToString("dd MMM, hh:mm:ss tt") + " IST";
+                await _sosHub.Clients.Group(EmergencySosHub.GuardsGroupName).SendAsync(
+                    "NewSosIncident",
+                    new
+                    {
+                        id = incident.Id,
+                        referenceCode = incident.ReferenceCode,
+                        categoryDisplay = FormatCategoryLabel(incident.Category),
+                        flatDisplay = $"{resident.Flat.Building.Code}-{resident.Flat.FlatNumber}",
+                        buildingName = resident.Flat.Building.Name,
+                        createdAtLocalDisplay = localTimeStr,
+                        detailsUrl = Url.Action(nameof(Details), "Emergency", new { id = incident.Id }),
+                        queueUrl = Url.Action(nameof(Queue), "Emergency")
+                    },
+                    ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to broadcast real-time SignalR alert for SOS incident {Id}.", incident.Id);
+            }
+
             TempData["SuccessMessage"] = $"Incident {incident.ReferenceCode} has been recorded in the SocietyOS Responder Queue.";
             return RedirectToAction(nameof(Details), new { id = incident.Id });
         }
@@ -233,7 +264,6 @@ namespace SocietyOS.Controllers
 
             var isOwner = incident.ReporterUserId == currentUserId;
 
-            // Strict ownership check: residents can never view another resident's SOS incident
             if (!isOwner && !isResponder)
             {
                 return NotFound();
@@ -248,7 +278,7 @@ namespace SocietyOS.Controllers
 
             var activeContacts = await _context.SocietyEmergencyContacts
                 .AsNoTracking()
-                .Where(c => c.IsActive)
+                .Where(c => c.IsActive && c.ShowOnEmergencySos)
                 .OrderBy(c => c.DisplayOrder)
                 .Select(c => new EmergencyContactItemViewModel
                 {
@@ -424,7 +454,6 @@ namespace SocietyOS.Controllers
                 query = query.Where(e => e.Category == category.Value);
             }
 
-            // Sort unresolved incidents first (Open -> Acknowledged -> Responding -> Resolved -> Cancelled), then newest first
             var raw = await query
                 .OrderBy(e => e.Status == EmergencyStatus.Open ? 0 :
                               e.Status == EmergencyStatus.Acknowledged ? 1 :
@@ -480,7 +509,6 @@ namespace SocietyOS.Controllers
                 return RedirectToAction(nameof(Details), new { id = incident.Id });
             }
 
-            // Enforce valid responder lifecycle transitions: Open -> Acknowledged -> Responding -> Resolved (or Admin Cancel)
             bool isAdmin = User.IsInRole("Administrator");
             bool isValid = (prev, next) switch
             {

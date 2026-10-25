@@ -43,6 +43,8 @@ builder.Services.AddScoped<IIssuePhotoStorageService, IssuePhotoStorageService>(
 
 builder.Services.AddScoped<IMarketplacePhotoStorageService, MarketplacePhotoStorageService>();
 
+builder.Services.AddSignalR();
+
 var app = builder.Build();
 
 // Run startup database seeder
@@ -86,5 +88,7 @@ app.MapControllerRoute(
 
 app.MapRazorPages()
    .WithStaticAssets();
+
+app.MapHub<SocietyOS.Hubs.EmergencySosHub>("/hubs/emergency-sos");
 
 app.Run();
