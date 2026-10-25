@@ -1,0 +1,37 @@
+﻿@model List<SocietyOS.ViewModels.EmergencyIncidentCardViewModel>
+@using SocietyOS.Models
+@{
+    ViewData["Title"] = "My Emergency SOS History";
+}
+
+<div class="home-container" style="max-width: 640px;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2 class="m-0 fw-bold" style="font-size: 22px;">My SOS History</h2>
+        <a asp-action="Index" class="btn btn-sm btn-danger rounded-pill px-3 fw-bold">Emergency SOS Page</a>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="bg-white border rounded-4 p-5 text-center">
+            <p class="text-muted m-0" style="font-size: 13px;">You have not submitted any Emergency SOS incidents.</p>
+        </div>
+    }
+    else
+    {
+        @foreach (var item in Model)
+        {
+            <div class="bg-white border rounded-4 p-3 mb-2 shadow-sm d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="badge @(item.Status == EmergencyStatus.Resolved ? "bg-success" : item.Status == EmergencyStatus.Cancelled ? "bg-secondary" : "bg-danger") mb-1" style="font-size: 10px;">
+                        @item.Status
+                    </span>
+                    <h6 class="fw-bold m-0">@item.ReferenceCode — @item.CategoryDisplay</h6>
+                    <small class="text-muted" style="font-size: 11px;">@item.CreatedAtLocalDisplay</small>
+                </div>
+                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-dark rounded-pill px-3">
+                    Details →
+                </a>
+            </div>
+        }
+    }
+</div>

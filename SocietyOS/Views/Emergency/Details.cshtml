@@ -1,0 +1,164 @@
+﻿@model SocietyOS.ViewModels.EmergencyIncidentDetailsViewModel
+@using SocietyOS.Models
+@{
+    ViewData["Title"] = "Incident " + Model.ReferenceCode;
+}
+
+<div class="home-container" style="max-width: 640px;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill">← Emergency Home</a>
+        @if (Model.IsResponder)
+        {
+            <a asp-action="Queue" class="btn btn-sm btn-dark rounded-pill px-3">Responder Queue</a>
+        }
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success py-2 px-3 mb-3" style="font-size: 13px;">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["WarningMessage"] != null)
+    {
+        <div class="alert alert-warning py-2 px-3 mb-3" style="font-size: 13px;">@TempData["WarningMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger py-2 px-3 mb-3" style="font-size: 13px;">@TempData["ErrorMessage"]</div>
+    }
+
+    <!-- Truthful Alert Delivery Banner -->
+    <div class="alert alert-warning border-warning py-2 px-3 mb-3" style="font-size: 12px;">
+        <strong>Delivery Status:</strong> @Model.NotificationStatusDisplay.
+        <div class="mt-1">
+            If you require immediate police, fire, or medical dispatch, call <a href="tel:112" class="fw-bold text-danger">112</a> or phone the society gate desk below directly.
+        </div>
+    </div>
+
+    <!-- Main Incident Card -->
+    <div class="bg-white border rounded-4 p-4 shadow-sm mb-3">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+                <span class="text-muted d-block" style="font-size: 11px; font-weight: 700;">INCIDENT REFERENCE</span>
+                <h1 class="h4 fw-bold m-0" style="color: var(--sos-primary);">@Model.ReferenceCode</h1>
+            </div>
+            <span class="badge @(Model.Status == EmergencyStatus.Resolved ? "bg-success" : Model.Status == EmergencyStatus.Cancelled ? "bg-secondary" : Model.Status == EmergencyStatus.Open ? "bg-danger" : "bg-warning text-dark") rounded-pill px-3 py-2" style="font-size: 12px;">
+                @Model.Status
+            </span>
+        </div>
+
+        <div class="row g-2 py-3 border-top border-bottom my-3" style="font-size: 13px;">
+            <div class="col-6">
+                <span class="text-muted d-block" style="font-size: 11px;">EMERGENCY TYPE</span>
+                <strong>@Model.CategoryDisplay</strong>
+            </div>
+            <div class="col-6">
+                <span class="text-muted d-block" style="font-size: 11px;">LOCATION / FLAT</span>
+                <strong>Flat @Model.FlatDisplay (@Model.BuildingName)</strong>
+            </div>
+            <div class="col-6 mt-2">
+                <span class="text-muted d-block" style="font-size: 11px;">REPORTED BY</span>
+                <strong>@Model.ResidentName</strong>
+            </div>
+            <div class="col-6 mt-2">
+                <span class="text-muted d-block" style="font-size: 11px;">RECORDED TIME</span>
+                <strong>@Model.CreatedAtLocalDisplay</strong>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.Description))
+        {
+            <div class="mb-3">
+                <span class="text-muted d-block" style="font-size: 11px;">REPORTED DETAILS</span>
+                <p class="m-0 p-2 bg-light rounded-3" style="font-size: 13px;">@Model.Description</p>
+            </div>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(Model.ResolutionNote))
+        {
+            <div class="p-3 rounded-3 mb-3" style="background: #eef8f2; border: 1px solid #bbf7d0; font-size: 13px;">
+                <strong class="text-success d-block mb-1">✓ Resolution Summary (@Model.ResolvedAtLocalDisplay)</strong>
+                @Model.ResolutionNote
+            </div>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(Model.CancellationReason))
+        {
+            <div class="p-3 bg-light border rounded-3 mb-3" style="font-size: 12px;">
+                <strong>Cancelled (@Model.CancelledAtLocalDisplay):</strong> @Model.CancellationReason
+            </div>
+        }
+
+        <!-- Resident Self-Cancellation if still Open -->
+        @if (Model.IsOwnerResident && Model.Status == EmergencyStatus.Open)
+        {
+            <form asp-action="CancelOwn" method="post" class="pt-2 border-top" onsubmit="return confirm('Cancel this SOS incident as a false alarm?');">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <div class="d-flex gap-2">
+                    <input type="text" name="reason" class="form-control form-control-sm" placeholder="Optional reason (e.g. Triggered by mistake)" />
+                    <button type="submit" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-semibold" style="white-space: nowrap;">
+                        Cancel False Alarm
+                    </button>
+                </div>
+            </form>
+        }
+    </div>
+
+    <!-- Responder Action Console (Security Guard & Administrator Only) -->
+    @if (Model.IsResponder && Model.Status != EmergencyStatus.Resolved && Model.Status != EmergencyStatus.Cancelled)
+    {
+        <section class="bg-white border border-dark rounded-4 p-4 shadow-sm mb-3" aria-label="Responder Status Update">
+            <span class="badge bg-dark mb-2">RESPONDER ACTION CONSOLE</span>
+            <h5 class="fw-bold mb-3" style="font-size: 15px;">Update Incident Response Status</h5>
+
+            <form asp-action="UpdateStatus" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="IncidentId" value="@Model.Id" />
+
+                <div class="mb-2">
+                    <label class="form-label fw-bold" style="font-size: 12px;">Transition Note / Resolution Details</label>
+                    <input type="text" name="Note" maxlength="500" class="form-control form-control-sm" placeholder="e.g. Guard Vikram dispatched to Tower B 2nd floor..." />
+                </div>
+
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                    @if (Model.Status == EmergencyStatus.Open)
+                    {
+                        <button type="submit" name="NewStatus" value="@EmergencyStatus.Acknowledged" class="btn btn-sm btn-warning text-dark fw-bold rounded-pill px-3">
+                            1. Acknowledge Incident
+                        </button>
+                    }
+                    @if (Model.Status == EmergencyStatus.Open || Model.Status == EmergencyStatus.Acknowledged)
+                    {
+                        <button type="submit" name="NewStatus" value="@EmergencyStatus.Responding" class="btn btn-sm btn-primary fw-bold rounded-pill px-3">
+                            2. Mark Responding On-Site
+                        </button>
+                    }
+                    <button type="submit" name="NewStatus" value="@EmergencyStatus.Resolved" class="btn btn-sm btn-success fw-bold rounded-pill px-3">
+                        3. Mark Resolved
+                    </button>
+                    @if (Model.IsAdmin)
+                    {
+                        <button type="submit" name="NewStatus" value="@EmergencyStatus.Cancelled" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                            Cancel Incident
+                        </button>
+                    }
+                </div>
+            </form>
+        </section>
+    }
+
+    <!-- Audit / Status History Timeline -->
+    <section class="bg-white border rounded-4 p-3 shadow-sm mb-4" aria-label="Incident Audit Timeline">
+        <h6 class="fw-bold mb-2" style="font-size: 13px;">Incident Status Timeline</h6>
+        @foreach (var h in Model.History)
+        {
+            <div class="border-top py-2" style="font-size: 12px;">
+                <div class="d-flex justify-content-between">
+                    <strong>@(h.PreviousStatus == h.NewStatus ? $"Created ({h.NewStatus})" : $"{h.PreviousStatus} → {h.NewStatus}")</strong>
+                    <span class="text-muted">@h.ChangedAtLocalDisplay</span>
+                </div>
+                <div class="text-muted">By: @h.ActorName @(string.IsNullOrEmpty(h.Note) ? "" : $"— {h.Note}")</div>
+            </div>
+        }
+    </section>
+</div>

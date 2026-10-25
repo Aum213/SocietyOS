@@ -125,12 +125,11 @@ namespace SocietyOS.Controllers
                     {
                         Id = "sos",
                         Title = "Emergency SOS",
-                        Subtitle = "Guard & Society Alert",
-                        BadgeText = "Planned",
+                        Subtitle = isGuard ? "Responder SOS Queue" : "Guard & Helpline Alert",
+                        BadgeText = "SOS",
                         ActionCategory = "SOS",
-                        TargetUrl = "#sos",
-                        IsPlannedFeature = true,
-                        PlannedPhaseNotice = "Emergency SOS is a planned safety module that will dispatch urgent alerts to on-duty guards and designated contacts in a future phase."
+                        TargetUrl = isGuard ? "/Emergency/Queue" : "/Emergency",
+                        IsPlannedFeature = false
                     },
                     new QuickActionItem
                     {
@@ -202,11 +201,10 @@ namespace SocietyOS.Controllers
                         Id = "society-directory",
                         Title = "Intercom Directory",
                         Subtitle = "Gate & Office Contacts",
-                        BadgeText = "Planned",
+                        BadgeText = "Active",
                         ActionCategory = "General",
-                        TargetUrl = "#intercom",
-                        IsPlannedFeature = true,
-                        PlannedPhaseNotice = "The verified intercom and committee contact directory is planned for a future phase."
+                        TargetUrl = "/Emergency",
+                        IsPlannedFeature = false
                     },
                     new QuickActionItem
                     {

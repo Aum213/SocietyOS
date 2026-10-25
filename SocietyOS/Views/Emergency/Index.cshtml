@@ -1,0 +1,165 @@
+﻿@model SocietyOS.ViewModels.EmergencyLandingViewModel
+@using SocietyOS.Models
+@using SocietyOS.Controllers
+@{
+    ViewData["Title"] = "Emergency SOS & Helplines";
+}
+
+<div class="home-container" style="max-width: 640px;">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div>
+            <span class="badge bg-danger mb-1" style="font-size: 10px; letter-spacing: 0.5px;">SAFETY & EMERGENCY • UNIT @Model.FlatDisplay</span>
+            <h2 class="m-0 fw-bold" style="font-size: 22px;">Emergency SOS</h2>
+        </div>
+        <div class="d-flex gap-2">
+            @if (Model.IsResponder)
+            {
+                <a asp-action="Queue" class="btn btn-sm btn-dark rounded-pill px-3 fw-semibold">Responder Queue</a>
+            }
+            <a asp-action="MyIncidents" class="btn btn-sm btn-outline-secondary rounded-pill px-3">My History</a>
+        </div>
+    </div>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger py-2 px-3 mb-3" style="font-size: 13px;">@TempData["ErrorMessage"]</div>
+    }
+
+    <!-- 1. Official National Emergency Numbers (India 112) -->
+    <section class="bg-white border border-danger rounded-4 p-3 shadow-sm mb-3" aria-label="Official National Emergency Services">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <strong class="text-danger" style="font-size: 13px;">🚨 Immediate Life-Threatening Emergency?</strong>
+            <span class="badge bg-danger" style="font-size: 10px;">OFFICIAL HELPLINES</span>
+        </div>
+        <p class="text-muted mb-2" style="font-size: 12px; line-height: 1.45;">
+            Recording an SOS in SocietyOS logs an incident for society guards, but <strong>does not automatically call 112</strong>. For immediate police, fire, or ambulance dispatch, tap to dial directly:
+        </p>
+        <div class="row g-2">
+            <div class="col-12 col-sm-4">
+                <a href="tel:112" class="btn btn-danger w-100 fw-bold rounded-pill py-2" style="font-size: 13px;">
+                    📞 Call 112 (All-in-One)
+                </a>
+            </div>
+            <div class="col-6 col-sm-4">
+                <a href="tel:101" class="btn btn-outline-danger w-100 fw-bold rounded-pill py-2" style="font-size: 13px;">
+                    🚒 Call 101 (Fire)
+                </a>
+            </div>
+            <div class="col-6 col-sm-4">
+                <a href="tel:108" class="btn btn-outline-danger w-100 fw-bold rounded-pill py-2" style="font-size: 13px;">
+                    🚑 Call 108 (Ambulance)
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. SocietyOS In-App SOS Confirmation Form -->
+    <section class="bg-white border rounded-4 p-4 shadow-sm mb-3" aria-label="Create Society SOS Incident">
+        <h4 class="h5 fw-bold mb-1">Report Society Emergency (Gate & Office Queue)</h4>
+        <p class="text-muted mb-3" style="font-size: 12px; line-height: 1.5;">
+            Confirming below records a high-priority incident for <strong>Flat @Model.FlatDisplay (@Model.BuildingName)</strong> in the SocietyOS Responder Queue. Note: External SMS/push alerts are not configured; on-duty guards view incidents on the gate dashboard.
+        </p>
+
+        <form asp-action="Confirm" method="post" id="sosForm">
+            @Html.AntiForgeryToken()
+
+            <div class="mb-3">
+                <label class="form-label fw-bold" style="font-size: 13px;">1. Select Emergency Category</label>
+                <div class="row g-2">
+                    @foreach (var cat in Enum.GetValues<EmergencyCategory>())
+                    {
+                        <div class="col-12 col-sm-6">
+                            <label class="border rounded-3 p-2 d-flex align-items-center gap-2 w-100" style="cursor: pointer; font-size: 13px;">
+                                <input type="radio" name="Category" value="@cat" class="form-check-input mt-0" checked="@(cat == EmergencyCategory.MedicalEmergency)" />
+                                <span class="fw-semibold">@EmergencyController.FormatCategoryLabel(cat)</span>
+                            </label>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="descInput" class="form-label fw-bold" style="font-size: 13px;">
+                    2. Optional Details <span class="text-muted fw-normal">(Leave blank if urgent)</span>
+                </label>
+                <textarea id="descInput" name="Description" rows="2" maxlength="500" class="form-control" placeholder="e.g. Need wheelchair assistance at Tower B lift lobby..."></textarea>
+            </div>
+
+            <button type="submit" id="sosSubmitBtn" class="btn btn-danger w-100 py-3 fw-bold rounded-pill" style="font-size: 15px;">
+                🚨 Confirm & Record Emergency SOS
+            </button>
+        </form>
+    </section>
+
+    <!-- 3. Configured Society Emergency Contacts -->
+    <section class="bg-white border rounded-4 p-3 shadow-sm mb-3" aria-label="Society Emergency Contacts">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="fw-bold m-0" style="font-size: 14px;">Society Emergency Desk Numbers</h6>
+            @if (User.IsInRole("Administrator"))
+            {
+                <a asp-action="Contacts" class="text-decoration-none fw-bold" style="font-size: 11px; color: var(--sos-primary);">Manage Contacts →</a>
+            }
+        </div>
+
+        @if (!Model.ActiveContacts.Any())
+        {
+            <p class="text-muted m-0" style="font-size: 12px;">No society emergency contact numbers are currently configured.</p>
+        }
+        else
+        {
+            <div class="list-group list-group-flush">
+                @foreach (var c in Model.ActiveContacts)
+                {
+                    <div class="list-group-item d-flex justify-content-between align-items-center px-1 py-2">
+                        <div>
+                            <div class="fw-bold" style="font-size: 13px;">@c.DisplayName</div>
+                            @if (!string.IsNullOrEmpty(c.Description))
+                            {
+                                <small class="text-muted" style="font-size: 11px;">@c.Description</small>
+                            }
+                        </div>
+                        <a href="tel:@c.PhoneNumber" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-bold">
+                            📞 @c.PhoneNumber
+                        </a>
+                    </div>
+                }
+            </div>
+        }
+    </section>
+
+    <!-- 4. Resident's Recent SOS Incidents -->
+    @if (Model.RecentResidentIncidents.Any())
+    {
+        <section class="bg-white border rounded-4 p-3 shadow-sm mb-4" aria-label="Your Recent SOS Incidents">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="fw-bold m-0" style="font-size: 14px;">Your Recent SOS Incidents</h6>
+                <a asp-action="MyIncidents" class="text-decoration-none fw-bold" style="font-size: 11px; color: var(--sos-primary);">View All →</a>
+            </div>
+            @foreach (var item in Model.RecentResidentIncidents)
+            {
+                <a asp-action="Details" asp-route-id="@item.Id" class="d-flex justify-content-between align-items-center p-2 border-top text-decoration-none text-dark" style="font-size: 12px;">
+                    <div>
+                        <strong>@item.ReferenceCode</strong> — @item.CategoryDisplay
+                        <div class="text-muted" style="font-size: 11px;">@item.CreatedAtLocalDisplay</div>
+                    </div>
+                    <span class="badge @(item.Status == EmergencyStatus.Resolved ? "bg-success" : item.Status == EmergencyStatus.Cancelled ? "bg-secondary" : "bg-danger") rounded-pill">
+                        @item.Status
+                    </span>
+                </a>
+            }
+        </section>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        const sosForm = document.getElementById('sosForm');
+        const sosSubmitBtn = document.getElementById('sosSubmitBtn');
+        sosForm?.addEventListener('submit', function () {
+            if (sosSubmitBtn) {
+                sosSubmitBtn.disabled = true;
+                sosSubmitBtn.textContent = 'Recording SOS Incident...';
+            }
+        });
+    </script>
+}

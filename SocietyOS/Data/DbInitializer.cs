@@ -324,6 +324,35 @@ namespace SocietyOS.Data
                 );
                 await context.SaveChangesAsync();
             }
+
+            // 9. Seed Safe Default Society Emergency Desk Contacts
+            if (primaryAdmin != null && !await context.SocietyEmergencyContacts.AnyAsync())
+            {
+                var now = DateTime.UtcNow;
+                context.SocietyEmergencyContacts.AddRange(
+                    new SocietyEmergencyContact
+                    {
+                        DisplayName = "Main Security Gate 1 Desk (Demo)",
+                        PhoneNumber = "0281-2220101",
+                        Description = "24×7 On-Duty Guard Desk at Main Entrance",
+                        IsActive = true,
+                        DisplayOrder = 1,
+                        UpdatedByAdminId = primaryAdmin.Id,
+                        UpdatedAtUtc = now
+                    },
+                    new SocietyEmergencyContact
+                    {
+                        DisplayName = "Society Management Office (Demo)",
+                        PhoneNumber = "0281-2220102",
+                        Description = "Facility Manager & Emergency Maintenance Desk",
+                        IsActive = true,
+                        DisplayOrder = 2,
+                        UpdatedByAdminId = primaryAdmin.Id,
+                        UpdatedAtUtc = now
+                    }
+                );
+                await context.SaveChangesAsync();
+            }
         }
     }
 }

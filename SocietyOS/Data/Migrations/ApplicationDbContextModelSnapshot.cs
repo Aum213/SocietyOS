@@ -704,6 +704,142 @@ namespace SocietyOS.Data.Migrations
                     b.ToTable("DailyHelpShortlists");
                 });
 
+            modelBuilder.Entity("SocietyOS.Models.EmergencyIncident", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AcknowledgedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("AcknowledgedByUserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("BuildingId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CancellationReason")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<DateTime?>("CancelledAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CancelledByUserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("Category")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("FlatId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("NotificationStatus")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ReferenceCode")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("ReporterUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ResolutionNote")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("ResolvedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ResolvedByUserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ResponderUserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("RespondingAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AcknowledgedByUserId");
+
+                    b.HasIndex("BuildingId");
+
+                    b.HasIndex("CancelledByUserId");
+
+                    b.HasIndex("FlatId");
+
+                    b.HasIndex("ReferenceCode")
+                        .IsUnique();
+
+                    b.HasIndex("ResolvedByUserId");
+
+                    b.HasIndex("ResponderUserId");
+
+                    b.HasIndex("ReporterUserId", "CreatedAtUtc");
+
+                    b.HasIndex("Status", "CreatedAtUtc");
+
+                    b.ToTable("EmergencyIncidents");
+                });
+
+            modelBuilder.Entity("SocietyOS.Models.EmergencyStatusHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ActorUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("ChangedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("IncidentId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("NewStatus")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("PreviousStatus")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorUserId");
+
+                    b.HasIndex("IncidentId");
+
+                    b.ToTable("EmergencyStatusHistories");
+                });
+
             modelBuilder.Entity("SocietyOS.Models.Flat", b =>
                 {
                     b.Property<int>("Id")
@@ -916,6 +1052,49 @@ namespace SocietyOS.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("SecurityGuards");
+                });
+
+            modelBuilder.Entity("SocietyOS.Models.SocietyEmergencyContact", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasMaxLength(25)
+                        .HasColumnType("nvarchar(25)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedByAdminId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UpdatedByAdminId");
+
+                    b.HasIndex("IsActive", "DisplayOrder");
+
+                    b.ToTable("SocietyEmergencyContacts");
                 });
 
             modelBuilder.Entity("SocietyOS.Models.VisitorRequest", b =>
@@ -1201,6 +1380,80 @@ namespace SocietyOS.Data.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("SocietyOS.Models.EmergencyIncident", b =>
+                {
+                    b.HasOne("SocietyOS.Models.ApplicationUser", "AcknowledgedByUser")
+                        .WithMany()
+                        .HasForeignKey("AcknowledgedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SocietyOS.Models.Building", "Building")
+                        .WithMany()
+                        .HasForeignKey("BuildingId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SocietyOS.Models.ApplicationUser", "CancelledByUser")
+                        .WithMany()
+                        .HasForeignKey("CancelledByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SocietyOS.Models.Flat", "Flat")
+                        .WithMany()
+                        .HasForeignKey("FlatId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SocietyOS.Models.ApplicationUser", "ReporterUser")
+                        .WithMany()
+                        .HasForeignKey("ReporterUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SocietyOS.Models.ApplicationUser", "ResolvedByUser")
+                        .WithMany()
+                        .HasForeignKey("ResolvedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SocietyOS.Models.ApplicationUser", "ResponderUser")
+                        .WithMany()
+                        .HasForeignKey("ResponderUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("AcknowledgedByUser");
+
+                    b.Navigation("Building");
+
+                    b.Navigation("CancelledByUser");
+
+                    b.Navigation("Flat");
+
+                    b.Navigation("ReporterUser");
+
+                    b.Navigation("ResolvedByUser");
+
+                    b.Navigation("ResponderUser");
+                });
+
+            modelBuilder.Entity("SocietyOS.Models.EmergencyStatusHistory", b =>
+                {
+                    b.HasOne("SocietyOS.Models.ApplicationUser", "ActorUser")
+                        .WithMany()
+                        .HasForeignKey("ActorUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SocietyOS.Models.EmergencyIncident", "Incident")
+                        .WithMany("StatusHistory")
+                        .HasForeignKey("IncidentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ActorUser");
+
+                    b.Navigation("Incident");
+                });
+
             modelBuilder.Entity("SocietyOS.Models.Flat", b =>
                 {
                     b.HasOne("SocietyOS.Models.Building", "Building")
@@ -1299,6 +1552,16 @@ namespace SocietyOS.Data.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("SocietyOS.Models.SocietyEmergencyContact", b =>
+                {
+                    b.HasOne("SocietyOS.Models.ApplicationUser", "UpdatedByAdmin")
+                        .WithMany()
+                        .HasForeignKey("UpdatedByAdminId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("UpdatedByAdmin");
+                });
+
             modelBuilder.Entity("SocietyOS.Models.VisitorRequest", b =>
                 {
                     b.HasOne("SocietyOS.Models.ApplicationUser", "DecisionByResident")
@@ -1361,6 +1624,11 @@ namespace SocietyOS.Data.Migrations
             modelBuilder.Entity("SocietyOS.Models.DailyHelpListing", b =>
                 {
                     b.Navigation("Shortlists");
+                });
+
+            modelBuilder.Entity("SocietyOS.Models.EmergencyIncident", b =>
+                {
+                    b.Navigation("StatusHistory");
                 });
 
             modelBuilder.Entity("SocietyOS.Models.Flat", b =>

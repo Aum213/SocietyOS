@@ -1,0 +1,70 @@
+﻿@model SocietyOS.ViewModels.AdminEmergencyContactsViewModel
+@{
+    ViewData["Title"] = "Manage Society Emergency Contacts";
+}
+
+<div class="home-container" style="max-width: 680px;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <span class="badge bg-dark mb-1" style="font-size: 10px;">ADMINISTRATION</span>
+            <h2 class="m-0 fw-bold" style="font-size: 22px;">Society Emergency Contacts</h2>
+        </div>
+        <a asp-action="Queue" class="btn btn-sm btn-outline-secondary rounded-pill">← Responder Queue</a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success py-2 px-3 mb-3" style="font-size: 13px;">@TempData["SuccessMessage"]</div>
+    }
+
+    <div class="bg-white border rounded-4 p-4 shadow-sm mb-3">
+        <h5 class="fw-bold mb-3" style="font-size: 15px;">Add Emergency Desk / Helpline Contact</h5>
+        <form asp-action="SaveContact" method="post">
+            @Html.AntiForgeryToken()
+            <div class="row g-2 mb-3">
+                <div class="col-12 col-sm-5">
+                    <label class="form-label fw-bold" style="font-size: 12px;">Display Name</label>
+                    <input asp-for="DisplayName" class="form-control form-control-sm" placeholder="e.g. Main Security Gate Desk" />
+                    <span asp-validation-for="DisplayName" class="text-danger" style="font-size: 11px;"></span>
+                </div>
+                <div class="col-8 col-sm-4">
+                    <label class="form-label fw-bold" style="font-size: 12px;">Phone Number</label>
+                    <input asp-for="PhoneNumber" class="form-control form-control-sm" placeholder="e.g. 0281-2220101" />
+                    <span asp-validation-for="PhoneNumber" class="text-danger" style="font-size: 11px;"></span>
+                </div>
+                <div class="col-4 col-sm-3">
+                    <label class="form-label fw-bold" style="font-size: 12px;">Order</label>
+                    <input asp-for="DisplayOrder" type="number" class="form-control form-control-sm" />
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold" style="font-size: 12px;">Description (Optional)</label>
+                <input asp-for="Description" class="form-control form-control-sm" placeholder="e.g. 24x7 On-Duty Guard Desk at Gate 1" />
+            </div>
+            <button type="submit" class="btn btn-sm btn-dark rounded-pill px-4 py-2 fw-bold">Save Contact</button>
+        </form>
+    </div>
+
+    @foreach (var c in Model.Contacts)
+    {
+        <div class="bg-white border rounded-4 p-3 mb-2 d-flex justify-content-between align-items-center">
+            <div>
+                <span class="badge @(c.IsActive ? "bg-success" : "bg-secondary") me-1" style="font-size: 10px;">
+                    @(c.IsActive ? "Active" : "Hidden")
+                </span>
+                <strong style="font-size: 14px;">@c.DisplayName</strong> — <a href="tel:@c.PhoneNumber">@c.PhoneNumber</a>
+                @if (!string.IsNullOrEmpty(c.Description))
+                {
+                    <div class="text-muted" style="font-size: 11px;">@c.Description</div>
+                }
+            </div>
+            <form asp-action="ToggleContact" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@c.Id" />
+                <button type="submit" class="btn btn-sm @(c.IsActive ? "btn-outline-danger" : "btn-outline-success") rounded-pill px-3" style="font-size: 11px;">
+                    @(c.IsActive ? "Deactivate" : "Activate")
+                </button>
+            </form>
+        </div>
+    }
+</div>

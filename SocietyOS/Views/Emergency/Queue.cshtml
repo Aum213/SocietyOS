@@ -1,0 +1,77 @@
+﻿@model SocietyOS.ViewModels.ResponderQueueViewModel
+@using SocietyOS.Models
+@{
+    ViewData["Title"] = "Emergency Responder Queue";
+}
+
+<div class="home-container" style="max-width: 820px;">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div>
+            <span class="badge bg-danger mb-1" style="font-size: 10px;">SECURITY & ADMIN RESPONDER DESK</span>
+            <h2 class="m-0 fw-bold" style="font-size: 22px;">Emergency SOS Queue</h2>
+        </div>
+        <div class="d-flex gap-2">
+            @if (User.IsInRole("Administrator"))
+            {
+                <a asp-action="Contacts" class="btn btn-sm btn-outline-dark rounded-pill">Emergency Contacts</a>
+            }
+            <a asp-action="Queue" class="btn btn-sm btn-dark rounded-pill">↻ Refresh Queue</a>
+        </div>
+    </div>
+
+    <div class="alert alert-light border py-2 px-3 mb-3" style="font-size: 12px;">
+        <strong>Responder Notice:</strong> External push/SMS notifications are not configured. Refresh this dashboard regularly to monitor incoming resident SOS incidents.
+    </div>
+
+    <!-- Status Filter Pills -->
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <a asp-action="Queue" class="btn btn-sm @(!Model.SelectedStatus.HasValue ? "btn-dark" : "btn-outline-secondary") rounded-pill">All</a>
+        <a asp-action="Queue" asp-route-status="@EmergencyStatus.Open" class="btn btn-sm @(Model.SelectedStatus == EmergencyStatus.Open ? "btn-danger" : "btn-outline-danger") rounded-pill fw-bold">
+            Open Unacknowledged (@Model.OpenCount)
+        </a>
+        <a asp-action="Queue" asp-route-status="@EmergencyStatus.Acknowledged" class="btn btn-sm @(Model.SelectedStatus == EmergencyStatus.Acknowledged ? "btn-warning text-dark" : "btn-outline-secondary") rounded-pill">
+            Acknowledged (@Model.AcknowledgedCount)
+        </a>
+        <a asp-action="Queue" asp-route-status="@EmergencyStatus.Responding" class="btn btn-sm @(Model.SelectedStatus == EmergencyStatus.Responding ? "btn-primary" : "btn-outline-primary") rounded-pill">
+            Responding (@Model.RespondingCount)
+        </a>
+        <a asp-action="Queue" asp-route-status="@EmergencyStatus.Resolved" class="btn btn-sm @(Model.SelectedStatus == EmergencyStatus.Resolved ? "btn-success" : "btn-outline-success") rounded-pill">
+            Resolved (@Model.ResolvedCount)
+        </a>
+    </div>
+
+    @if (!Model.Incidents.Any())
+    {
+        <div class="bg-white border rounded-4 p-5 text-center">
+            <h5 class="fw-bold mb-1">No Matching Emergency Incidents</h5>
+            <p class="text-muted m-0" style="font-size: 13px;">There are no SOS incidents matching the selected filter.</p>
+        </div>
+    }
+    else
+    {
+        @foreach (var item in Model.Incidents)
+        {
+            <div class="bg-white border @(item.Status == EmergencyStatus.Open ? "border-danger" : "") rounded-4 p-3 mb-2 shadow-sm d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <span class="badge @(item.Status == EmergencyStatus.Open ? "bg-danger" : item.Status == EmergencyStatus.Resolved ? "bg-success" : item.Status == EmergencyStatus.Cancelled ? "bg-secondary" : "bg-warning text-dark")">
+                            @item.Status
+                        </span>
+                        <strong style="font-size: 14px;">@item.ReferenceCode — @item.CategoryDisplay</strong>
+                        <span class="badge bg-light text-dark border">Flat @item.FlatDisplay (@item.BuildingName)</span>
+                    </div>
+                    <div class="text-muted" style="font-size: 12px;">
+                        Resident: <strong>@item.ResidentName</strong> • Reported: @item.CreatedAtLocalDisplay
+                    </div>
+                    @if (!string.IsNullOrEmpty(item.Description))
+                    {
+                        <div class="mt-1" style="font-size: 12px;"><em>“@item.Description”</em></div>
+                    }
+                </div>
+                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm @(item.Status == EmergencyStatus.Open ? "btn-danger" : "btn-outline-dark") rounded-pill px-3 fw-bold">
+                    Open & Respond →
+                </a>
+            </div>
+        }
+    }
+</div>

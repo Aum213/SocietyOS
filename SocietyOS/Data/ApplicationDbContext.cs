@@ -32,6 +32,11 @@ namespace SocietyOS.Data
         public DbSet<DailyHelpListing> DailyHelpListings => Set<DailyHelpListing>();
         public DbSet<DailyHelpShortlist> DailyHelpShortlists => Set<DailyHelpShortlist>();
 
+        //EMERGENCY SOS 
+        public DbSet<EmergencyIncident> EmergencyIncidents => Set<EmergencyIncident>();
+        public DbSet<EmergencyStatusHistory> EmergencyStatusHistories => Set<EmergencyStatusHistory>();
+        public DbSet<SocietyEmergencyContact> SocietyEmergencyContacts => Set<SocietyEmergencyContact>();
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -289,6 +294,76 @@ namespace SocietyOS.Data
                 entity.HasOne(s => s.User)
                       .WithMany()
                       .HasForeignKey(s => s.UserId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+            // EmergencyIncident indexes and non-cascading foreign keys
+            builder.Entity<EmergencyIncident>(entity =>
+            {
+                entity.HasIndex(e => e.ReferenceCode).IsUnique();
+                entity.HasIndex(e => new { e.Status, e.CreatedAtUtc });
+                entity.HasIndex(e => new { e.ReporterUserId, e.CreatedAtUtc });
+                entity.HasIndex(e => e.FlatId);
+
+                entity.HasOne(e => e.ReporterUser)
+                      .WithMany()
+                      .HasForeignKey(e => e.ReporterUserId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.Flat)
+                      .WithMany()
+                      .HasForeignKey(e => e.FlatId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.Building)
+                      .WithMany()
+                      .HasForeignKey(e => e.BuildingId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.AcknowledgedByUser)
+                      .WithMany()
+                      .HasForeignKey(e => e.AcknowledgedByUserId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.ResponderUser)
+                      .WithMany()
+                      .HasForeignKey(e => e.ResponderUserId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.ResolvedByUser)
+                      .WithMany()
+                      .HasForeignKey(e => e.ResolvedByUserId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.CancelledByUser)
+                      .WithMany()
+                      .HasForeignKey(e => e.CancelledByUserId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // EmergencyStatusHistory audit log
+            builder.Entity<EmergencyStatusHistory>(entity =>
+            {
+                entity.HasIndex(h => h.IncidentId);
+
+                entity.HasOne(h => h.Incident)
+                      .WithMany(e => e.StatusHistory)
+                      .HasForeignKey(h => h.IncidentId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(h => h.ActorUser)
+                      .WithMany()
+                      .HasForeignKey(h => h.ActorUserId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // SocietyEmergencyContact configuration
+            builder.Entity<SocietyEmergencyContact>(entity =>
+            {
+                entity.HasIndex(c => new { c.IsActive, c.DisplayOrder });
+
+                entity.HasOne(c => c.UpdatedByAdmin)
+                      .WithMany()
+                      .HasForeignKey(c => c.UpdatedByAdminId)
                       .OnDelete(DeleteBehavior.Restrict);
             });
         }
