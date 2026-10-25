@@ -159,6 +159,159 @@ namespace SocietyOS.Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("SocietyOS.Models.Amenity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AdvanceBookingDays")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Capacity")
+                        .HasColumnType("int");
+
+                    b.Property<TimeSpan>("ClosingTimeLocal")
+                        .HasColumnType("time");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Location")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<int>("MaxActiveBookingsPerResident")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MaxBookingMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MinBookingMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<TimeSpan>("OpeningTimeLocal")
+                        .HasColumnType("time");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("Name");
+
+                    b.ToTable("Amenities");
+                });
+
+            modelBuilder.Entity("SocietyOS.Models.AmenityBooking", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AmenityId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CancellationReason")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<DateTime?>("CancelledAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CancelledByUserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("EndTimeUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("FlatId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ResidentUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("StartTimeUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CancelledByUserId");
+
+                    b.HasIndex("FlatId");
+
+                    b.HasIndex("ResidentUserId", "Status", "StartTimeUtc");
+
+                    b.HasIndex("AmenityId", "Status", "StartTimeUtc", "EndTimeUtc");
+
+                    b.ToTable("AmenityBookings");
+                });
+
+            modelBuilder.Entity("SocietyOS.Models.AmenityClosure", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AmenityId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedByAdminId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("EndTimeUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<DateTime>("StartTimeUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByAdminId");
+
+                    b.HasIndex("AmenityId", "StartTimeUtc", "EndTimeUtc");
+
+                    b.ToTable("AmenityClosures");
+                });
+
             modelBuilder.Entity("SocietyOS.Models.Announcement", b =>
                 {
                     b.Property<int>("Id")
@@ -776,6 +929,59 @@ namespace SocietyOS.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("SocietyOS.Models.AmenityBooking", b =>
+                {
+                    b.HasOne("SocietyOS.Models.Amenity", "Amenity")
+                        .WithMany("Bookings")
+                        .HasForeignKey("AmenityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SocietyOS.Models.ApplicationUser", "CancelledByUser")
+                        .WithMany()
+                        .HasForeignKey("CancelledByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SocietyOS.Models.Flat", "Flat")
+                        .WithMany()
+                        .HasForeignKey("FlatId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SocietyOS.Models.ApplicationUser", "ResidentUser")
+                        .WithMany()
+                        .HasForeignKey("ResidentUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Amenity");
+
+                    b.Navigation("CancelledByUser");
+
+                    b.Navigation("Flat");
+
+                    b.Navigation("ResidentUser");
+                });
+
+            modelBuilder.Entity("SocietyOS.Models.AmenityClosure", b =>
+                {
+                    b.HasOne("SocietyOS.Models.Amenity", "Amenity")
+                        .WithMany("Closures")
+                        .HasForeignKey("AmenityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SocietyOS.Models.ApplicationUser", "CreatedByAdmin")
+                        .WithMany()
+                        .HasForeignKey("CreatedByAdminId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Amenity");
+
+                    b.Navigation("CreatedByAdmin");
+                });
+
             modelBuilder.Entity("SocietyOS.Models.Announcement", b =>
                 {
                     b.HasOne("SocietyOS.Models.ApplicationUser", "CreatedByAdmin")
@@ -960,6 +1166,13 @@ namespace SocietyOS.Data.Migrations
                     b.Navigation("Flat");
 
                     b.Navigation("RegisteredByGuard");
+                });
+
+            modelBuilder.Entity("SocietyOS.Models.Amenity", b =>
+                {
+                    b.Navigation("Bookings");
+
+                    b.Navigation("Closures");
                 });
 
             modelBuilder.Entity("SocietyOS.Models.Announcement", b =>

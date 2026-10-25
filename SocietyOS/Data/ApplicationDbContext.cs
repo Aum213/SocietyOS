@@ -23,6 +23,11 @@ namespace SocietyOS.Data
         public DbSet<Announcement> Announcements => Set<Announcement>();
         public DbSet<AnnouncementRead> AnnouncementReads => Set<AnnouncementRead>();
 
+        //Amenities booking phase
+        public DbSet<Amenity> Amenities => Set<Amenity>();
+        public DbSet<AmenityBooking> AmenityBookings => Set<AmenityBooking>();
+        public DbSet<AmenityClosure> AmenityClosures => Set<AmenityClosure>();
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -191,6 +196,57 @@ namespace SocietyOS.Data
                 entity.HasOne(r => r.User)
                       .WithMany()
                       .HasForeignKey(r => r.UserId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+            // Amenity configuration
+            builder.Entity<Amenity>(entity =>
+            {
+                entity.HasIndex(a => a.IsActive);
+                entity.HasIndex(a => a.Name);
+            });
+
+            // AmenityBooking relationships and interval query indexes
+            builder.Entity<AmenityBooking>(entity =>
+            {
+                entity.HasIndex(b => new { b.AmenityId, b.Status, b.StartTimeUtc, b.EndTimeUtc });
+                entity.HasIndex(b => new { b.ResidentUserId, b.Status, b.StartTimeUtc });
+                entity.HasIndex(b => b.FlatId);
+
+                // Restrict deletion so historical bookings are never destroyed if an amenity or user is modified
+                entity.HasOne(b => b.Amenity)
+                      .WithMany(a => a.Bookings)
+                      .HasForeignKey(b => b.AmenityId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(b => b.ResidentUser)
+                      .WithMany()
+                      .HasForeignKey(b => b.ResidentUserId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(b => b.Flat)
+                      .WithMany()
+                      .HasForeignKey(b => b.FlatId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(b => b.CancelledByUser)
+                      .WithMany()
+                      .HasForeignKey(b => b.CancelledByUserId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // AmenityClosure relationships and interval index
+            builder.Entity<AmenityClosure>(entity =>
+            {
+                entity.HasIndex(c => new { c.AmenityId, c.StartTimeUtc, c.EndTimeUtc });
+
+                entity.HasOne(c => c.Amenity)
+                      .WithMany(a => a.Closures)
+                      .HasForeignKey(c => c.AmenityId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(c => c.CreatedByAdmin)
+                      .WithMany()
+                      .HasForeignKey(c => c.CreatedByAdminId)
                       .OnDelete(DeleteBehavior.Restrict);
             });
         }

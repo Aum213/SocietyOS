@@ -1,0 +1,82 @@
+﻿@model SocietyOS.ViewModels.AmenityFormViewModel
+@{
+    ViewData["Title"] = "Add Society Amenity";
+}
+
+<div class="home-container" style="max-width: 600px;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2 class="m-0 fw-bold" style="font-size: 22px;">Create Amenity</h2>
+        <a asp-action="Admin" class="btn btn-sm btn-outline-secondary rounded-pill">Cancel</a>
+    </div>
+
+    <div class="bg-white border rounded-4 p-4 shadow-sm">
+        <form asp-action="Create" method="post">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2" style="font-size: 13px;"></div>
+
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label fw-bold" style="font-size: 13px;"></label>
+                <input asp-for="Name" class="form-control" placeholder="e.g. Badminton Court 1" />
+                <span asp-validation-for="Name" class="text-danger" style="font-size: 12px;"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Location" class="form-label fw-bold" style="font-size: 13px;"></label>
+                <input asp-for="Location" class="form-control" placeholder="e.g. Clubhouse Ground Floor" />
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Description" class="form-label fw-bold" style="font-size: 13px;"></label>
+                <textarea asp-for="Description" rows="3" class="form-control" placeholder="Describe rules, equipment requirements, and footwear guidelines..."></textarea>
+                <span asp-validation-for="Description" class="text-danger" style="font-size: 12px;"></span>
+            </div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label asp-for="OpeningTimeLocal" class="form-label fw-bold" style="font-size: 12px;"></label>
+                    <input asp-for="OpeningTimeLocal" type="time" class="form-control" />
+                </div>
+                <div class="col-6">
+                    <label asp-for="ClosingTimeLocal" class="form-label fw-bold" style="font-size: 12px;"></label>
+                    <input asp-for="ClosingTimeLocal" type="time" class="form-control" />
+                    <span asp-validation-for="ClosingTimeLocal" class="text-danger" style="font-size: 11px;"></span>
+                </div>
+            </div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label asp-for="MinBookingMinutes" class="form-label fw-bold" style="font-size: 12px;"></label>
+                    <input asp-for="MinBookingMinutes" type="number" step="15" class="form-control" />
+                </div>
+                <div class="col-6">
+                    <label asp-for="MaxBookingMinutes" class="form-label fw-bold" style="font-size: 12px;"></label>
+                    <input asp-for="MaxBookingMinutes" type="number" step="15" class="form-control" />
+                    <span asp-validation-for="MaxBookingMinutes" class="text-danger" style="font-size: 11px;"></span>
+                </div>
+            </div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-4">
+                    <label asp-for="AdvanceBookingDays" class="form-label fw-bold" style="font-size: 11px;">Advance Days</label>
+                    <input asp-for="AdvanceBookingDays" type="number" class="form-control" />
+                </div>
+                <div class="col-4">
+                    <label asp-for="MaxActiveBookingsPerResident" class="form-label fw-bold" style="font-size: 11px;">Limit / Resident</label>
+                    <input asp-for="MaxActiveBookingsPerResident" type="number" class="form-control" />
+                </div>
+                <div class="col-4">
+                    <label asp-for="Capacity" class="form-label fw-bold" style="font-size: 11px;">Capacity</label>
+                    <input asp-for="Capacity" type="number" class="form-control" />
+                </div>
+            </div>
+
+            <div class="form-check mb-3">
+                <input asp-for="IsActive" class="form-check-input" />
+                <label asp-for="IsActive" class="form-check-label fw-semibold" style="font-size: 13px;">Active for Resident Bookings</label>
+            </div>
+
+            <button type="submit" class="btn btn-success w-100 py-2 fw-bold rounded-pill" style="background: var(--sos-primary);">
+                Save Amenity
+            </button>
+        </form>
+    </div>
+</div>

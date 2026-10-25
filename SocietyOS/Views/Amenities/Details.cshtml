@@ -1,0 +1,135 @@
+﻿@model SocietyOS.ViewModels.AmenityDetailsViewModel
+@{
+    ViewData["Title"] = "Book " + Model.Amenity.Name;
+}
+
+<div class="home-container" style="max-width: 640px;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill">← All Amenities</a>
+        <a asp-action="MyBookings" class="btn btn-sm btn-outline-success rounded-pill fw-semibold">My Bookings</a>
+    </div>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger py-2 px-3 mb-3" style="font-size: 13px;">@TempData["ErrorMessage"]</div>
+    }
+
+    <!-- Amenity Summary Card -->
+    <div class="bg-white border rounded-4 p-4 shadow-sm mb-3">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+                <h1 class="h4 fw-bold m-0">@Model.Amenity.Name</h1>
+                @if (!string.IsNullOrEmpty(Model.Amenity.Location))
+                {
+                    <small class="text-muted">📍 @Model.Amenity.Location</small>
+                }
+            </div>
+            <span class="badge bg-success rounded-pill">
+                @(Model.Amenity.Capacity == 1 ? "Exclusive Reservation" : $"Capacity: {Model.Amenity.Capacity}")
+            </span>
+        </div>
+
+        <p class="text-muted mb-3" style="font-size: 13px;">@Model.Amenity.Description</p>
+
+        <div class="d-flex flex-wrap gap-3 pt-2 border-top" style="font-size: 12px;">
+            <span>🕒 <strong>@Model.Amenity.OperatingHoursDisplay</strong></span>
+            <span>⏱️ <strong>@Model.Amenity.MinBookingMinutes–@Model.Amenity.MaxBookingMinutes mins</strong></span>
+            <span>📌 <strong>Your Active Bookings: @Model.ResidentActiveBookingsForAmenity / @Model.Amenity.MaxActiveBookingsPerResident</strong></span>
+        </div>
+    </div>
+
+    <!-- Step 1: Select Date to View Schedule -->
+    <div class="bg-white border rounded-4 p-4 shadow-sm mb-3">
+        <form method="get" asp-action="Details" asp-route-id="@Model.Amenity.Id" class="row g-2 align-items-end mb-3">
+            <div class="col-8 col-sm-9">
+                <label for="datePicker" class="form-label fw-bold mb-1" style="font-size: 12px;">1. Select Date (IST)</label>
+                <input type="date" id="datePicker" name="date"
+                       value="@Model.SelectedLocalDate.ToString("yyyy-MM-dd")"
+                       min="@Model.MinLocalDate.ToString("yyyy-MM-dd")"
+                       max="@Model.MaxLocalDate.ToString("yyyy-MM-dd")"
+                       class="form-control form-control-sm"
+                       onchange="this.form.submit()" />
+            </div>
+            <div class="col-4 col-sm-3">
+                <button type="submit" class="btn btn-sm btn-outline-dark w-100">Check Date</button>
+            </div>
+        </form>
+
+        <h6 class="fw-bold mb-2" style="font-size: 13px;">
+            Schedule for @Model.SelectedLocalDate.ToString("ddd, dd MMM yyyy")
+        </h6>
+
+        @if (Model.Closures.Any())
+        {
+            @foreach (var c in Model.Closures)
+            {
+                <div class="alert alert-warning py-2 px-3 mb-2" style="font-size: 12px;">
+                    <strong>⚠️ Maintenance Closure:</strong> @c.StartLocalDisplay – @c.EndLocalDisplay (@c.Reason)
+                </div>
+            }
+        }
+
+        @if (!Model.OccupiedIntervals.Any() && !Model.Closures.Any())
+        {
+            <div class="p-3 bg-light rounded-3 text-success fw-semibold" style="font-size: 12px;">
+                ✓ All operating slots on @Model.SelectedLocalDate.ToString("dd MMM") are currently open!
+            </div>
+        }
+        else if (Model.OccupiedIntervals.Any())
+        {
+            <div class="d-flex flex-column gap-1">
+                @foreach (var slot in Model.OccupiedIntervals)
+                {
+                    <div class="d-flex justify-content-between align-items-center p-2 rounded-3 border @(slot.IsFull ? "bg-light" : "")" style="font-size: 12px;">
+                        <span>
+                            <strong>@slot.StartLocalDisplay – @slot.EndLocalDisplay IST</strong>
+                            @if (slot.IsCurrentUserBooking)
+                            {
+                                <span class="badge bg-success ms-1" style="font-size: 10px;">Your Booking</span>
+                            }
+                        </span>
+                        <span class="badge @(slot.IsFull ? "bg-danger" : "bg-warning text-dark")">
+                            @(Model.Amenity.Capacity == 1 ? "Reserved" : $"{slot.BookedCount} / {slot.Capacity} Booked")
+                        </span>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Step 2: Reserve Time Slot Form -->
+    <div class="bg-white border rounded-4 p-4 shadow-sm mb-4">
+        <h5 class="fw-bold mb-3" style="font-size: 16px;">2. Reserve Your Time Slot</h5>
+
+        <form asp-action="Book" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="AmenityId" value="@Model.Amenity.Id" />
+            <input type="hidden" name="LocalDate" value="@Model.SelectedLocalDate.ToString("yyyy-MM-dd")" />
+
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label for="startSelect" class="form-label fw-bold" style="font-size: 12px;">Start Time (IST)</label>
+                    <select id="startSelect" name="StartTimeLocal" class="form-select">
+                        @foreach (var t in Model.AvailableTimeOptions.SkipLast(1))
+                        {
+                            <option value="@t" selected="@(Model.BookingForm.StartTimeLocal == t)">@t</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-6">
+                    <label for="endSelect" class="form-label fw-bold" style="font-size: 12px;">End Time (IST)</label>
+                    <select id="endSelect" name="EndTimeLocal" class="form-select">
+                        @foreach (var t in Model.AvailableTimeOptions.Skip(1))
+                        {
+                            <option value="@t" selected="@(Model.BookingForm.EndTimeLocal == t)">@t</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-success w-100 py-2 fw-bold rounded-pill" style="background: var(--sos-primary);">
+                Confirm Reservation for @Model.SelectedLocalDate.ToString("dd MMM")
+            </button>
+        </form>
+    </div>
+</div>

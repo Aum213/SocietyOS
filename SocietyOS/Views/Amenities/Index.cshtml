@@ -1,0 +1,83 @@
+﻿@model SocietyOS.ViewModels.AmenityCatalogueViewModel
+@{
+    ViewData["Title"] = "Book Society Amenities";
+}
+
+<div class="home-container" style="max-width: 680px;">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div>
+            <span class="badge bg-success mb-1" style="font-size: 10px; letter-spacing: 0.5px;">FACILITIES • @Model.ResidentFlatDisplay</span>
+            <h2 class="m-0 fw-bold" style="font-size: 22px;">Book an Amenity</h2>
+        </div>
+        <div class="d-flex gap-2">
+            @if (User.IsInRole("Administrator"))
+            {
+                <a asp-action="Admin" class="btn btn-sm btn-dark rounded-pill px-3 fw-semibold">Admin Console</a>
+            }
+            <a asp-action="MyBookings" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-bold">
+                My Bookings (@Model.ActiveUpcomingBookingsCount)
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success py-2 px-3 mb-3" style="font-size: 13px;">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger py-2 px-3 mb-3" style="font-size: 13px;">@TempData["ErrorMessage"]</div>
+    }
+
+    @if (!Model.Amenities.Any())
+    {
+        <div class="text-center bg-white border rounded-4 p-5">
+            <div style="font-size: 36px; margin-bottom: 8px;">🎾</div>
+            <h5 class="fw-bold mb-1">No Active Amenities</h5>
+            <p class="text-muted m-0" style="font-size: 13px;">No society facilities are currently enabled for online reservation.</p>
+        </div>
+    }
+    else
+    {
+        @foreach (var item in Model.Amenities)
+        {
+            <article class="bg-white border rounded-4 p-4 mb-3 shadow-sm">
+                <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                    <div>
+                        <h3 class="h5 fw-bold m-0" style="color: var(--sos-primary);">@item.Name</h3>
+                        @if (!string.IsNullOrEmpty(item.Location))
+                        {
+                            <small class="text-muted" style="font-size: 12px;">📍 @item.Location</small>
+                        }
+                    </div>
+                    <span class="badge @(item.Capacity == 1 ? "bg-dark" : "bg-success") rounded-pill" style="font-size: 11px;">
+                        @(item.Capacity == 1 ? "Exclusive Slot (1 Flat)" : $"Capacity: {item.Capacity} Residents")
+                    </span>
+                </div>
+
+                <p class="text-muted mb-3" style="font-size: 13px; line-height: 1.5;">@item.Description</p>
+
+                <div class="row g-2 bg-light rounded-3 p-2 mb-3" style="font-size: 12px;">
+                    <div class="col-6 col-sm-4">
+                        <span class="text-muted d-block" style="font-size: 10px;">OPERATING HOURS</span>
+                        <strong>@item.OperatingHoursDisplay</strong>
+                    </div>
+                    <div class="col-6 col-sm-4">
+                        <span class="text-muted d-block" style="font-size: 10px;">DURATION LIMIT</span>
+                        <strong>@item.MinBookingMinutes – @item.MaxBookingMinutes mins</strong>
+                    </div>
+                    <div class="col-12 col-sm-4">
+                        <span class="text-muted d-block" style="font-size: 10px;">ADVANCE WINDOW</span>
+                        <strong>Up to @item.AdvanceBookingDays days ahead</strong>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end">
+                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-success rounded-pill px-4 py-2 fw-bold" style="background: var(--sos-primary);">
+                        Check Availability & Book →
+                    </a>
+                </div>
+            </article>
+        }
+    }
+</div>

@@ -1,0 +1,98 @@
+﻿@model SocietyOS.ViewModels.MyBookingsViewModel
+@using SocietyOS.Models
+@{
+    ViewData["Title"] = "My Amenity Bookings";
+}
+
+<div class="home-container" style="max-width: 640px;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <span class="badge bg-success mb-1" style="font-size: 10px;">UNIT @Model.FlatDisplay</span>
+            <h2 class="m-0 fw-bold" style="font-size: 22px;">My Bookings</h2>
+        </div>
+        <a asp-action="Index" class="btn btn-sm btn-success rounded-pill px-3 fw-bold" style="background: var(--sos-primary);">
+            + New Booking
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success py-2 px-3 mb-3" style="font-size: 13px;">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["WarningMessage"] != null)
+    {
+        <div class="alert alert-warning py-2 px-3 mb-3" style="font-size: 13px;">@TempData["WarningMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger py-2 px-3 mb-3" style="font-size: 13px;">@TempData["ErrorMessage"]</div>
+    }
+
+    <!-- Upcoming Confirmed Bookings -->
+    <h5 class="fw-bold mb-2" style="font-size: 15px;">Upcoming Confirmed (@Model.UpcomingBookings.Count)</h5>
+    @if (!Model.UpcomingBookings.Any())
+    {
+        <div class="bg-white border rounded-4 p-4 text-center mb-4">
+            <p class="text-muted m-0" style="font-size: 13px;">You have no upcoming amenity reservations.</p>
+        </div>
+    }
+    else
+    {
+        <div class="mb-4">
+            @foreach (var b in Model.UpcomingBookings)
+            {
+                <div class="bg-white border rounded-4 p-3 mb-2 shadow-sm d-flex justify-content-between align-items-center gap-2">
+                    <div>
+                        <span class="badge bg-success mb-1" style="font-size: 10px;">Confirmed</span>
+                        <h6 class="fw-bold m-0">@b.AmenityName</h6>
+                        <div class="text-muted" style="font-size: 12px;">
+                            📅 <strong>@b.LocalDateDisplay</strong> • 🕒 @b.LocalTimeRangeDisplay
+                        </div>
+                    </div>
+                    @if (b.CanCancel)
+                    {
+                        <form asp-action="Cancel" method="post" onsubmit="return confirm('Cancel this reservation and release the time slot?');">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@b.Id" />
+                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-semibold">
+                                Cancel
+                            </button>
+                        </form>
+                    }
+                </div>
+            }
+        </div>
+    }
+
+    <!-- Past & Cancelled History -->
+    <h5 class="fw-bold mb-2" style="font-size: 15px;">Past & Cancelled History</h5>
+    @if (!Model.PastOrCancelledBookings.Any())
+    {
+        <div class="bg-white border rounded-4 p-4 text-center">
+            <p class="text-muted m-0" style="font-size: 13px;">No past or cancelled booking records yet.</p>
+        </div>
+    }
+    else
+    {
+        @foreach (var b in Model.PastOrCancelledBookings)
+        {
+            <div class="bg-white border rounded-4 p-3 mb-2" style="opacity: 0.85;">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <strong style="font-size: 14px;">@b.AmenityName</strong>
+                    <span class="badge @(b.Status == AmenityBookingStatus.Cancelled ? "bg-secondary" : "bg-light text-dark border")" style="font-size: 10px;">
+                        @(b.Status == AmenityBookingStatus.Cancelled ? "Cancelled" : "Completed")
+                    </span>
+                </div>
+                <div class="text-muted" style="font-size: 12px;">
+                    @b.LocalDateDisplay • @b.LocalTimeRangeDisplay
+                </div>
+                @if (!string.IsNullOrEmpty(b.CancellationReason))
+                {
+                    <div class="text-danger mt-1" style="font-size: 11px;">
+                        Reason: @b.CancellationReason @(b.CancelledAtLocalDisplay != null ? $"({b.CancelledAtLocalDisplay})" : "")
+                    </div>
+                }
+            </div>
+        }
+    }
+</div>

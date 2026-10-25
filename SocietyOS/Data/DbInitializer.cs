@@ -205,6 +205,62 @@ namespace SocietyOS.Data
                 );
                 await context.SaveChangesAsync();
             }
+            // 7. Seed Initial Society Amenities
+            if (!await context.Amenities.AnyAsync())
+            {
+                var now = DateTime.UtcNow;
+                context.Amenities.AddRange(
+                    new Amenity
+                    {
+                        Name = "Badminton Court 1",
+                        Description = "Indoor synthetic-mat badminton court. Non-marking shoes are mandatory. Exclusive slot reservation per flat.",
+                        Location = "Sports Arena, Near Tower C",
+                        IsActive = true,
+                        OpeningTimeLocal = new TimeSpan(6, 0, 0),
+                        ClosingTimeLocal = new TimeSpan(22, 0, 0),
+                        MinBookingMinutes = 30,
+                        MaxBookingMinutes = 120,
+                        AdvanceBookingDays = 7,
+                        MaxActiveBookingsPerResident = 2,
+                        Capacity = 1,
+                        CreatedAtUtc = now,
+                        UpdatedAtUtc = now
+                    },
+                    new Amenity
+                    {
+                        Name = "Clubhouse Multipurpose Hall",
+                        Description = "Air-conditioned community room suitable for small family gatherings, study groups, and resident committee meetings.",
+                        Location = "Central Clubhouse, 1st Floor",
+                        IsActive = true,
+                        OpeningTimeLocal = new TimeSpan(9, 0, 0),
+                        ClosingTimeLocal = new TimeSpan(21, 0, 0),
+                        MinBookingMinutes = 60,
+                        MaxBookingMinutes = 240,
+                        AdvanceBookingDays = 14,
+                        MaxActiveBookingsPerResident = 1,
+                        Capacity = 1,
+                        CreatedAtUtc = now,
+                        UpdatedAtUtc = now
+                    },
+                    new Amenity
+                    {
+                        Name = "Community Fitness & Gym",
+                        Description = "Cardio and strength training facility. Supports up to 10 concurrent residents per time window.",
+                        Location = "Central Clubhouse, Ground Floor",
+                        IsActive = true,
+                        OpeningTimeLocal = new TimeSpan(5, 30, 0),
+                        ClosingTimeLocal = new TimeSpan(22, 30, 0),
+                        MinBookingMinutes = 30,
+                        MaxBookingMinutes = 120,
+                        AdvanceBookingDays = 7,
+                        MaxActiveBookingsPerResident = 3,
+                        Capacity = 10,
+                        CreatedAtUtc = now,
+                        UpdatedAtUtc = now
+                    }
+                );
+                await context.SaveChangesAsync();
+            }
         }
     }
 }

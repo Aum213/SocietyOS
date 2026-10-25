@@ -167,12 +167,11 @@ namespace SocietyOS.Controllers
                     {
                         Id = "book-amenity",
                         Title = "Book Amenity",
-                        Subtitle = "Clubhouse & Court",
-                        BadgeText = "Planned",
+                        Subtitle = "Clubhouse, Gym & Courts",
+                        BadgeText = "Active",
                         ActionCategory = "Facility",
-                        TargetUrl = "#book-amenity",
-                        IsPlannedFeature = true,
-                        PlannedPhaseNotice = "Amenity slot booking for the clubhouse, gym, and badminton court is planned for a future phase."
+                        TargetUrl = "/Amenities",
+                        IsPlannedFeature = false
                     },
                     new QuickActionItem
                     {

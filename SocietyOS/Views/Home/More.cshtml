@@ -30,6 +30,14 @@
                 <span class="badge bg-success rounded-pill">Active</span>
             </a>
 
+            <a asp-controller="Amenities" asp-action="Index" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3 px-2">
+                <div>
+                    <div class="fw-bold" style="font-size: 14px;">🎾 Book Society Amenities</div>
+                    <small class="text-muted">Reserve the Badminton Court, Clubhouse Hall, or Fitness Center</small>
+                </div>
+                <span class="badge bg-success rounded-pill">Active</span>
+            </a>
+
             <a asp-controller="Issues" asp-action="Index" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3 px-2">
                 <div>
                     <div class="fw-bold" style="font-size: 14px;">🛠️ Community Issues Feed</div>
@@ -73,6 +81,14 @@
                     <span class="badge bg-dark rounded-pill">Admin</span>
                 </a>
 
+                <a asp-controller="Amenities" asp-action="Admin" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2 px-2">
+                    <div>
+                        <div class="fw-bold" style="font-size: 13px;">Manage Amenities & Reservations</div>
+                        <small class="text-muted">Configure facilities, operating hours, closures, and resident bookings</small>
+                    </div>
+                    <span class="badge bg-dark rounded-pill">Admin</span>
+                </a>
+
                 <a asp-controller="Issues" asp-action="Admin" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2 px-2">
                     <div>
                         <div class="fw-bold" style="font-size: 13px;">Issue Triage & Status Console</div>
@@ -105,10 +121,6 @@
             </div>
             <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-2 text-muted">
                 <span>🧹 Daily Help (Maid, Cook & Driver Attendance)</span>
-                <span class="badge bg-light text-secondary border">Planned</span>
-            </div>
-            <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-2 text-muted">
-                <span>🎾 Amenity Slot Booking (Clubhouse & Courts)</span>
                 <span class="badge bg-light text-secondary border">Planned</span>
             </div>
             <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-2 text-muted">

@@ -1,0 +1,89 @@
+﻿@model SocietyOS.ViewModels.AdminClosuresViewModel
+@{
+    ViewData["Title"] = "Maintenance Closures — " + Model.Amenity.Name;
+}
+
+<div class="home-container" style="max-width: 680px;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <span class="badge bg-warning text-dark mb-1" style="font-size: 10px;">MAINTENANCE BLOCKS</span>
+            <h2 class="m-0 fw-bold" style="font-size: 22px;">@Model.Amenity.Name Closures</h2>
+        </div>
+        <a asp-action="Admin" class="btn btn-sm btn-outline-secondary rounded-pill">← Back</a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success py-2 px-3 mb-3" style="font-size: 13px;">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger py-2 px-3 mb-3" style="font-size: 13px;">@TempData["ErrorMessage"]</div>
+    }
+
+    <div class="bg-white border rounded-4 p-4 shadow-sm mb-3">
+        <h5 class="fw-bold mb-2" style="font-size: 15px;">Schedule Maintenance or Event Closure</h5>
+        <p class="text-muted mb-3" style="font-size: 12px;">
+            Any existing confirmed resident bookings that overlap this closure window will be automatically cancelled with the reason recorded below.
+        </p>
+
+        <form asp-action="AddClosure" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="AmenityId" />
+
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label class="form-label fw-bold" style="font-size: 12px;">Start Date (IST)</label>
+                    <input asp-for="StartLocalDate" type="date" class="form-control form-control-sm" />
+                </div>
+                <div class="col-6">
+                    <label class="form-label fw-bold" style="font-size: 12px;">Start Time (IST)</label>
+                    <input asp-for="StartLocalTime" type="time" class="form-control form-control-sm" />
+                </div>
+                <div class="col-6">
+                    <label class="form-label fw-bold" style="font-size: 12px;">End Date (IST)</label>
+                    <input asp-for="EndLocalDate" type="date" class="form-control form-control-sm" />
+                </div>
+                <div class="col-6">
+                    <label class="form-label fw-bold" style="font-size: 12px;">End Time (IST)</label>
+                    <input asp-for="EndLocalTime" type="time" class="form-control form-control-sm" />
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold" style="font-size: 12px;">Closure Reason</label>
+                <input asp-for="Reason" required maxlength="300" class="form-control form-control-sm" placeholder="e.g. Court floor polishing and net replacement" />
+            </div>
+
+            <button type="submit" class="btn btn-sm btn-dark rounded-pill px-4 py-2 fw-bold">
+                Block Time Window
+            </button>
+        </form>
+    </div>
+
+    <h6 class="fw-bold mb-2">Active & Recent Closures</h6>
+    @if (!Model.Closures.Any())
+    {
+        <div class="bg-white border rounded-4 p-4 text-center text-muted" style="font-size: 13px;">
+            No maintenance closures scheduled for this amenity.
+        </div>
+    }
+    else
+    {
+        @foreach (var c in Model.Closures)
+        {
+            <div class="bg-white border rounded-4 p-3 mb-2 d-flex justify-content-between align-items-center">
+                <div style="font-size: 12px;">
+                    <strong>@c.StartLocalDisplay – @c.EndLocalDisplay IST</strong>
+                    <div class="text-muted">Reason: @c.Reason</div>
+                </div>
+                <form asp-action="RemoveClosure" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@c.Id" />
+                    <input type="hidden" name="amenityId" value="@Model.Amenity.Id" />
+                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3" style="font-size: 11px;">Remove</button>
+                </form>
+            </div>
+        }
+    }
+</div>

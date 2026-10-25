@@ -1,0 +1,97 @@
+﻿@model SocietyOS.ViewModels.AdminBookingsIndexViewModel
+@using SocietyOS.Models
+@{
+    ViewData["Title"] = "Resident Amenity Bookings";
+}
+
+<div class="home-container" style="max-width: 840px;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <span class="badge bg-dark mb-1" style="font-size: 10px;">ADMINISTRATION</span>
+            <h2 class="m-0 fw-bold" style="font-size: 22px;">Resident Reservations</h2>
+        </div>
+        <a asp-action="Admin" class="btn btn-sm btn-outline-secondary rounded-pill">← Manage Amenities</a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success py-2 px-3 mb-3" style="font-size: 13px;">@TempData["SuccessMessage"]</div>
+    }
+
+    <form method="get" asp-action="Bookings" class="bg-white border rounded-4 p-3 mb-3 shadow-sm">
+        <div class="row g-2 align-items-end">
+            <div class="col-12 col-sm-4">
+                <label class="form-label text-muted fw-semibold mb-1" style="font-size: 11px;">AMENITY</label>
+                <select name="amenityId" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">All Amenities</option>
+                    @foreach (var a in Model.Amenities)
+                    {
+                        <option value="@a.Id" selected="@(Model.SelectedAmenityId == a.Id)">@a.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-6 col-sm-3">
+                <label class="form-label text-muted fw-semibold mb-1" style="font-size: 11px;">STATUS</label>
+                <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">All Statuses</option>
+                    @foreach (var s in Enum.GetValues<AmenityBookingStatus>())
+                    {
+                        <option value="@s" selected="@(Model.SelectedStatus == s)">@s</option>
+                    }
+                </select>
+            </div>
+            <div class="col-6 col-sm-3">
+                <label class="form-label text-muted fw-semibold mb-1" style="font-size: 11px;">LOCAL DATE</label>
+                <input type="date" name="date" value="@(Model.SelectedLocalDate?.ToString("yyyy-MM-dd"))" class="form-control form-control-sm" />
+            </div>
+            <div class="col-12 col-sm-2">
+                <button type="submit" class="btn btn-sm btn-dark w-100">Filter</button>
+            </div>
+        </div>
+    </form>
+
+    @if (!Model.Bookings.Any())
+    {
+        <div class="bg-white border rounded-4 p-5 text-center">
+            <p class="text-muted m-0" style="font-size: 13px;">No booking records match the selected filters.</p>
+        </div>
+    }
+    else
+    {
+        @foreach (var b in Model.Bookings)
+        {
+            <div class="bg-white border rounded-4 p-3 mb-2 shadow-sm">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                    <div>
+                        <span class="badge @(b.Status == AmenityBookingStatus.Confirmed ? "bg-success" : "bg-secondary") me-1" style="font-size: 10px;">
+                            @b.Status
+                        </span>
+                        <strong style="font-size: 14px;">@b.AmenityName</strong>
+                        <span class="text-muted ms-2" style="font-size: 12px;">
+                            Resident: <strong>@b.ResidentName (Flat @b.FlatDisplay)</strong>
+                        </span>
+                    </div>
+                    <span class="fw-semibold" style="font-size: 12px;">@b.LocalDateDisplay • @b.LocalTimeRangeDisplay</span>
+                </div>
+
+                @if (!string.IsNullOrEmpty(b.CancellationReason))
+                {
+                    <div class="text-danger" style="font-size: 11px;">Cancellation Reason: @b.CancellationReason</div>
+                }
+
+                @if (b.CanCancel)
+                {
+                    <form asp-action="Cancel" method="post" class="d-flex gap-2 mt-2 pt-2 border-top">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@b.Id" />
+                        <input type="hidden" name="fromAdmin" value="true" />
+                        <input type="text" name="reason" required maxlength="300" class="form-control form-control-sm" placeholder="Enter reason for cancelling resident reservation..." />
+                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-semibold" style="white-space: nowrap;">
+                            Cancel Booking
+                        </button>
+                    </form>
+                }
+            </div>
+        }
+    }
+</div>
