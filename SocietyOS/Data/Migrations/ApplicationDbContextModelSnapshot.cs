@@ -590,6 +590,120 @@ namespace SocietyOS.Data.Migrations
                     b.ToTable("CommunityIssues");
                 });
 
+            modelBuilder.Entity("SocietyOS.Models.DailyHelpListing", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AdminInternalNotes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("AvailabilityNotes")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<int>("Category")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ContactPhone")
+                        .HasMaxLength(25)
+                        .HasColumnType("nvarchar(25)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ExperienceNotes")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("LastModifiedByAdminId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ProviderName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ServiceArea")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("ShortDescription")
+                        .IsRequired()
+                        .HasMaxLength(600)
+                        .HasColumnType("nvarchar(600)");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int");
+
+                    b.Property<string>("SubmittedByResidentUserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("VerificationStatus")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("VerifiedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("VerifiedByAdminId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Category");
+
+                    b.HasIndex("LastModifiedByAdminId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("SubmittedByResidentUserId");
+
+                    b.HasIndex("VerifiedByAdminId");
+
+                    b.HasIndex("Status", "Category");
+
+                    b.ToTable("DailyHelpListings");
+                });
+
+            modelBuilder.Entity("SocietyOS.Models.DailyHelpShortlist", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ListingId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("ListingId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("DailyHelpShortlists");
+                });
+
             modelBuilder.Entity("SocietyOS.Models.Flat", b =>
                 {
                     b.Property<int>("Id")
@@ -1044,6 +1158,49 @@ namespace SocietyOS.Data.Migrations
                     b.Navigation("ReporterUser");
                 });
 
+            modelBuilder.Entity("SocietyOS.Models.DailyHelpListing", b =>
+                {
+                    b.HasOne("SocietyOS.Models.ApplicationUser", "LastModifiedByAdmin")
+                        .WithMany()
+                        .HasForeignKey("LastModifiedByAdminId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SocietyOS.Models.ApplicationUser", "SubmittedByResidentUser")
+                        .WithMany()
+                        .HasForeignKey("SubmittedByResidentUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SocietyOS.Models.ApplicationUser", "VerifiedByAdmin")
+                        .WithMany()
+                        .HasForeignKey("VerifiedByAdminId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("LastModifiedByAdmin");
+
+                    b.Navigation("SubmittedByResidentUser");
+
+                    b.Navigation("VerifiedByAdmin");
+                });
+
+            modelBuilder.Entity("SocietyOS.Models.DailyHelpShortlist", b =>
+                {
+                    b.HasOne("SocietyOS.Models.DailyHelpListing", "Listing")
+                        .WithMany("Shortlists")
+                        .HasForeignKey("ListingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SocietyOS.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Listing");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SocietyOS.Models.Flat", b =>
                 {
                     b.HasOne("SocietyOS.Models.Building", "Building")
@@ -1199,6 +1356,11 @@ namespace SocietyOS.Data.Migrations
                     b.Navigation("StatusHistory");
 
                     b.Navigation("Votes");
+                });
+
+            modelBuilder.Entity("SocietyOS.Models.DailyHelpListing", b =>
+                {
+                    b.Navigation("Shortlists");
                 });
 
             modelBuilder.Entity("SocietyOS.Models.Flat", b =>

@@ -28,6 +28,10 @@ namespace SocietyOS.Data
         public DbSet<AmenityBooking> AmenityBookings => Set<AmenityBooking>();
         public DbSet<AmenityClosure> AmenityClosures => Set<AmenityClosure>();
 
+        //Daily Help
+        public DbSet<DailyHelpListing> DailyHelpListings => Set<DailyHelpListing>();
+        public DbSet<DailyHelpShortlist> DailyHelpShortlists => Set<DailyHelpShortlist>();
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -247,6 +251,44 @@ namespace SocietyOS.Data
                 entity.HasOne(c => c.CreatedByAdmin)
                       .WithMany()
                       .HasForeignKey(c => c.CreatedByAdminId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+            // DailyHelpListing indexes and non-cascading audit foreign keys
+            builder.Entity<DailyHelpListing>(entity =>
+            {
+                entity.HasIndex(d => d.Status);
+                entity.HasIndex(d => d.Category);
+                entity.HasIndex(d => new { d.Status, d.Category });
+
+                entity.HasOne(d => d.VerifiedByAdmin)
+                      .WithMany()
+                      .HasForeignKey(d => d.VerifiedByAdminId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(d => d.SubmittedByResidentUser)
+                      .WithMany()
+                      .HasForeignKey(d => d.SubmittedByResidentUserId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(d => d.LastModifiedByAdmin)
+                      .WithMany()
+                      .HasForeignKey(d => d.LastModifiedByAdminId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // DailyHelpShortlist composite uniqueness constraint: 1 shortlist record per user per listing
+            builder.Entity<DailyHelpShortlist>(entity =>
+            {
+                entity.HasIndex(s => new { s.ListingId, s.UserId }).IsUnique();
+
+                entity.HasOne(s => s.Listing)
+                      .WithMany(d => d.Shortlists)
+                      .HasForeignKey(s => s.ListingId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(s => s.User)
+                      .WithMany()
+                      .HasForeignKey(s => s.UserId)
                       .OnDelete(DeleteBehavior.Restrict);
             });
         }

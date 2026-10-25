@@ -137,11 +137,10 @@ namespace SocietyOS.Controllers
                         Id = "daily-help",
                         Title = "Daily Help",
                         Subtitle = "Maid, Cook & Driver",
-                        BadgeText = "Planned",
+                        BadgeText = "Active",
                         ActionCategory = "Community",
-                        TargetUrl = "#daily-help",
-                        IsPlannedFeature = true,
-                        PlannedPhaseNotice = "Daily Help attendance logs and domestic staff entry notifications are planned for a future phase."
+                        TargetUrl = "/DailyHelp",
+                        IsPlannedFeature = false
                     },
                     new QuickActionItem
                     {

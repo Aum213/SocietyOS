@@ -1,0 +1,162 @@
+﻿@model SocietyOS.ViewModels.DailyHelpDirectoryViewModel
+@using SocietyOS.Models
+@using SocietyOS.Controllers
+@{
+    ViewData["Title"] = "Daily Help — Household Services Directory";
+    var currentUrl = Context.Request.Path + Context.Request.QueryString;
+}
+
+<div class="home-container" style="max-width: 680px;">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div>
+            <span class="badge bg-success mb-1" style="font-size: 10px; letter-spacing: 0.5px;">HOUSEHOLD SERVICES</span>
+            <h2 class="m-0 fw-bold" style="font-size: 22px;">Daily Help Directory</h2>
+        </div>
+        <div class="d-flex gap-2">
+            @if (User.IsInRole("Administrator"))
+            {
+                <a asp-action="Admin" class="btn btn-sm btn-dark rounded-pill px-3 fw-semibold">Admin Console</a>
+            }
+            <a asp-action="Recommend" class="btn btn-sm btn-success rounded-pill px-3 fw-bold" style="background: var(--sos-primary);">
+                + Recommend Helper
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success py-2 px-3 mb-3" style="font-size: 13px;">@TempData["SuccessMessage"]</div>
+    }
+
+    <!-- Search & Category Filter Form -->
+    <form method="get" asp-action="Index" class="bg-white border rounded-4 p-3 mb-3 shadow-sm">
+        <div class="row g-2 align-items-end">
+            <div class="col-12 col-sm-5">
+                <label for="searchBox" class="form-label text-muted fw-semibold mb-1" style="font-size: 11px;">SEARCH PROVIDER OR AREA</label>
+                <input type="search" id="searchBox" name="q" value="@Model.SearchQuery" class="form-control form-control-sm" placeholder="Name, skill, or tower..." />
+            </div>
+            <div class="col-7 col-sm-4">
+                <label for="catSelect" class="form-label text-muted fw-semibold mb-1" style="font-size: 11px;">SERVICE CATEGORY</label>
+                <select id="catSelect" name="category" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">All Categories</option>
+                    @foreach (var cat in Enum.GetValues<DailyHelpCategory>())
+                    {
+                        <option value="@cat" selected="@(Model.SelectedCategory == cat)">@DailyHelpController.FormatCategoryLabel(cat)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-5 col-sm-3">
+                <button type="submit" class="btn btn-sm btn-dark w-100">Search</button>
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center justify-content-between pt-2 mt-2 border-top" style="font-size: 12px;">
+            <span class="text-muted">Showing <strong>@Model.TotalListings</strong> active provider(s)</span>
+            <a asp-action="Index"
+               asp-route-category="@Model.SelectedCategory"
+               asp-route-q="@Model.SearchQuery"
+               asp-route-savedOnly="@(!Model.SavedOnly)"
+               class="btn btn-sm @(Model.SavedOnly ? "btn-success" : "btn-outline-secondary") rounded-pill px-3"
+               style="font-size: 11px;">
+                ★ Saved Shortlist (@Model.SavedCount)
+            </a>
+        </div>
+    </form>
+
+    @if (!Model.Listings.Any())
+    {
+        <div class="text-center bg-white border rounded-4 p-5">
+            <div style="font-size: 36px; margin-bottom: 8px;">🧹</div>
+            <h5 class="fw-bold mb-1">No Matching Service Providers</h5>
+            <p class="text-muted mb-3" style="font-size: 13px;">
+                No active household service listings match your current filters.
+            </p>
+            <a asp-action="Recommend" class="btn btn-sm btn-outline-success rounded-pill px-4 fw-semibold">
+                Recommend a Trusted Helper
+            </a>
+        </div>
+    }
+    else
+    {
+        @foreach (var item in Model.Listings)
+        {
+            <article class="bg-white border rounded-4 p-3 mb-3 shadow-sm">
+                <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                    <div class="d-flex flex-wrap gap-1 align-items-center">
+                        <span class="badge bg-light text-dark border fw-semibold" style="font-size: 11px;">
+                            @item.CategoryDisplay
+                        </span>
+                        @if (item.VerificationStatus == DailyHelpVerificationStatus.GatePassChecked)
+                        {
+                            <span class="badge bg-success rounded-pill" style="font-size: 10px;" title="Active society gate entry pass verified by the office">
+                                ✓ Gate-Pass Checked
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary rounded-pill" style="font-size: 10px;">
+                                Society-Listed
+                            </span>
+                        }
+                    </div>
+
+                    <form asp-action="ToggleShortlist" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@item.Id" />
+                        <input type="hidden" name="returnUrl" value="@currentUrl" />
+                        <button type="submit" class="btn btn-sm @(item.IsSavedByCurrentUser ? "btn-warning text-dark" : "btn-light border") rounded-pill px-2 py-0" style="font-size: 11px;" title="Save to shortlist">
+                            @(item.IsSavedByCurrentUser ? "★ Saved" : "☆ Save")
+                        </button>
+                    </form>
+                </div>
+
+                <h3 class="h6 fw-bold mb-1">
+                    <a asp-action="Details" asp-route-id="@item.Id" class="text-decoration-none" style="color: var(--sos-primary);">
+                        @item.ProviderName
+                    </a>
+                </h3>
+
+                <p class="text-muted mb-2" style="font-size: 13px; line-height: 1.45;">
+                    @item.ShortDescription
+                </p>
+
+                <div class="d-flex flex-wrap gap-3 text-muted mb-2" style="font-size: 12px;">
+                    @if (!string.IsNullOrEmpty(item.ServiceArea))
+                    {
+                        <span>📍 <strong>Area:</strong> @item.ServiceArea</span>
+                    }
+                    @if (!string.IsNullOrEmpty(item.AvailabilityNotes))
+                    {
+                        <span>🕒 <strong>Timings:</strong> @item.AvailabilityNotes</span>
+                    }
+                </div>
+
+                <div class="d-flex align-items-center justify-content-between pt-2 border-top mt-2" style="font-size: 12px;">
+                    <span class="text-muted">
+                        @(item.HasContactPhone ? "📞 Phone available on profile" : "Contact via Society Office")
+                    </span>
+                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-bold">
+                        View Profile & Contact →
+                    </a>
+                </div>
+            </article>
+        }
+
+        @if (Model.TotalPages > 1)
+        {
+            <nav aria-label="Directory pages" class="d-flex justify-content-center gap-2 my-3">
+                @for (int p = 1; p <= Model.TotalPages; p++)
+                {
+                    <a asp-action="Index"
+                       asp-route-category="@Model.SelectedCategory"
+                       asp-route-q="@Model.SearchQuery"
+                       asp-route-savedOnly="@Model.SavedOnly"
+                       asp-route-page="@p"
+                       class="btn btn-sm @(p == Model.CurrentPage ? "btn-success" : "btn-outline-secondary") rounded-pill px-3">
+                        @p
+                    </a>
+                }
+            </nav>
+        }
+    }
+</div>

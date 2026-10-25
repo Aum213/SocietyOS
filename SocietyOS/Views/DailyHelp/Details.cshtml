@@ -1,0 +1,118 @@
+﻿@model SocietyOS.ViewModels.DailyHelpDetailsViewModel
+@using SocietyOS.Models
+@{
+    ViewData["Title"] = Model.ProviderName + " — Daily Help Profile";
+}
+
+<div class="home-container" style="max-width: 600px;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill">← Back to Directory</a>
+        @if (Model.IsAdmin)
+        {
+            <div class="d-flex gap-2">
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-dark rounded-pill">Edit</a>
+                <a asp-action="Admin" class="btn btn-sm btn-dark rounded-pill">Admin Console</a>
+            </div>
+        }
+    </div>
+
+    <div class="bg-white border rounded-4 p-4 shadow-sm mb-3">
+        <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+            <div>
+                <span class="badge bg-light text-dark border mb-1" style="font-size: 11px;">@Model.CategoryDisplay</span>
+                <h1 class="h4 fw-bold m-0">@Model.ProviderName</h1>
+            </div>
+
+            <form asp-action="ToggleShortlist" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button type="submit" class="btn btn-sm @(Model.IsSavedByCurrentUser ? "btn-warning text-dark" : "btn-outline-secondary") rounded-pill px-3 fw-semibold">
+                    @(Model.IsSavedByCurrentUser ? "★ Saved" : "☆ Save to Shortlist")
+                </button>
+            </form>
+        </div>
+
+        <!-- Honest Verification Explanation Box -->
+        <div class="p-2 px-3 rounded-3 mb-3 @(Model.VerificationStatus == DailyHelpVerificationStatus.GatePassChecked ? "bg-light border border-success" : "bg-light border")" style="font-size: 12px;">
+            @if (Model.VerificationStatus == DailyHelpVerificationStatus.GatePassChecked)
+            {
+                <strong class="text-success">✓ Gate-Pass Checked by Society Office</strong>
+                <div class="text-muted" style="font-size: 11px;">
+                    This provider holds an active entry pass recorded by the society office. Note: This indicates gate-pass registration, not a police background warranty.
+                </div>
+            }
+            else
+            {
+                <strong>Society-Listed Provider</strong>
+                <div class="text-muted" style="font-size: 11px;">
+                    Listed for resident convenience (@(Model.Source == DailyHelpListingSource.ResidentRecommended ? "Resident Recommendation approved by Admin" : "Society Directory")). Residents should verify references independently before hiring.
+                </div>
+            }
+        </div>
+
+        <p style="font-size: 14px; line-height: 1.6;">@Model.ShortDescription</p>
+
+        <div class="row g-2 py-3 border-top border-bottom my-3" style="font-size: 13px;">
+            <div class="col-6">
+                <span class="text-muted d-block" style="font-size: 11px;">SERVICE AREA</span>
+                <strong>@(string.IsNullOrWhiteSpace(Model.ServiceArea) ? "Not specified" : Model.ServiceArea)</strong>
+            </div>
+            <div class="col-6">
+                <span class="text-muted d-block" style="font-size: 11px;">AVAILABILITY / TIMINGS</span>
+                <strong>@(string.IsNullOrWhiteSpace(Model.AvailabilityNotes) ? "Contact to confirm" : Model.AvailabilityNotes)</strong>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(Model.ExperienceNotes))
+            {
+                <div class="col-12 mt-2">
+                    <span class="text-muted d-block" style="font-size: 11px;">EXPERIENCE NOTE</span>
+                    <strong>@Model.ExperienceNotes</strong>
+                </div>
+            }
+        </div>
+
+        <!-- Intentional Privacy-Conscious Contact Section -->
+        <div>
+            <h6 class="fw-bold mb-2" style="font-size: 13px;">Contact Information</h6>
+            @if (!Model.HasContactPhone)
+            {
+                <div class="p-3 bg-light rounded-3 text-muted" style="font-size: 13px;">
+                    Direct phone number is not listed. Please inquire at the Main Security Gate or Society Office.
+                </div>
+            }
+            else if (Model.IsContactRevealed && !string.IsNullOrEmpty(Model.RevealedContactPhone))
+            {
+                <div class="p-3 rounded-3 d-flex flex-wrap align-items-center justify-content-between gap-2" style="background: #eef8f2; border: 1px solid #bbf7d0;">
+                    <div>
+                        <span class="text-muted d-block" style="font-size: 11px;">DIRECT PHONE NUMBER</span>
+                        <strong style="font-size: 16px; color: var(--sos-primary);">@Model.RevealedContactPhone</strong>
+                    </div>
+                    <a href="tel:@Model.RevealedContactPhone" class="btn btn-sm btn-success rounded-pill px-4 py-2 fw-bold" style="background: var(--sos-primary);">
+                        📞 Dial on Phone
+                    </a>
+                </div>
+            }
+            else
+            {
+                <form asp-action="RevealContact" asp-route-id="@Model.Id" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-success w-100 py-2 fw-bold rounded-pill" style="background: var(--sos-primary);">
+                        🔒 Reveal Provider Phone Number
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+
+    @if (Model.IsAdmin)
+    {
+        <div class="bg-white border border-dark rounded-4 p-3 shadow-sm" style="font-size: 12px;">
+            <span class="badge bg-dark mb-2">ADMINISTRATION ONLY — CONFIDENTIAL</span>
+            <div><strong>Listing Status:</strong> @Model.Status</div>
+            <div><strong>Source:</strong> @Model.Source (@Model.RecommenderInternalDisplay)</div>
+            @if (!string.IsNullOrEmpty(Model.AdminInternalNotes))
+            {
+                <div class="mt-1"><strong>Internal Notes:</strong> @Model.AdminInternalNotes</div>
+            }
+        </div>
+    }
+</div>

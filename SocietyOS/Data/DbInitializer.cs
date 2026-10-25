@@ -205,6 +205,7 @@ namespace SocietyOS.Data
                 );
                 await context.SaveChangesAsync();
             }
+
             // 7. Seed Initial Society Amenities
             if (!await context.Amenities.AnyAsync())
             {
@@ -255,6 +256,68 @@ namespace SocietyOS.Data
                         AdvanceBookingDays = 7,
                         MaxActiveBookingsPerResident = 3,
                         Capacity = 10,
+                        CreatedAtUtc = now,
+                        UpdatedAtUtc = now
+                    }
+                );
+                await context.SaveChangesAsync();
+            }
+
+            // 8. Seed Initial Daily Help Household Service Listings
+            if (primaryAdmin != null && !await context.DailyHelpListings.AnyAsync())
+            {
+                var now = DateTime.UtcNow;
+                context.DailyHelpListings.AddRange(
+                    new DailyHelpListing
+                    {
+                        ProviderName = "Rekha Ben Parmar",
+                        Category = DailyHelpCategory.MaidHousekeeping,
+                        ShortDescription = "Experienced in daily sweeping, mopping, and utensil cleaning. Currently has afternoon slots open for Towers A and B.",
+                        ServiceArea = "Towers A & B",
+                        AvailabilityNotes = "Afternoon 1:30 PM – 5:00 PM",
+                        ExperienceNotes = "Working in SocietyOS towers for 4 years",
+                        ContactPhone = "+91 98250 11223",
+                        Status = DailyHelpListingStatus.Active,
+                        Source = DailyHelpListingSource.SocietyManaged,
+                        VerificationStatus = DailyHelpVerificationStatus.GatePassChecked,
+                        VerifiedByAdminId = primaryAdmin.Id,
+                        VerifiedAtUtc = now,
+                        AdminInternalNotes = "Active Gate Pass #GP-108 verified at Main Gate.",
+                        LastModifiedByAdminId = primaryAdmin.Id,
+                        CreatedAtUtc = now,
+                        UpdatedAtUtc = now
+                    },
+                    new DailyHelpListing
+                    {
+                        ProviderName = "Meena Ben Joshi",
+                        Category = DailyHelpCategory.Cook,
+                        ShortDescription = "Specializes in Gujarati, North Indian, and wholesome home-style meals. Available for morning and evening cooking slots.",
+                        ServiceArea = "All Towers (A–D)",
+                        AvailabilityNotes = "Morning 8 AM – 11 AM, Evening 6 PM – 8 PM",
+                        ExperienceNotes = "Cooking in 5 flats across Towers B & C",
+                        ContactPhone = "+91 98250 33445",
+                        Status = DailyHelpListingStatus.Active,
+                        Source = DailyHelpListingSource.SocietyManaged,
+                        VerificationStatus = DailyHelpVerificationStatus.GatePassChecked,
+                        VerifiedByAdminId = primaryAdmin.Id,
+                        VerifiedAtUtc = now,
+                        AdminInternalNotes = "Active Gate Pass #GP-114 verified.",
+                        LastModifiedByAdminId = primaryAdmin.Id,
+                        CreatedAtUtc = now,
+                        UpdatedAtUtc = now
+                    },
+                    new DailyHelpListing
+                    {
+                        ProviderName = "Kishore Bhai Solanki",
+                        Category = DailyHelpCategory.LaundryIroning,
+                        ShortDescription = "Steam pressing and doorstep cloth pickup/delivery across all four apartment buildings.",
+                        ServiceArea = "All Towers (A–D)",
+                        AvailabilityNotes = "Daily 9:00 AM – 7:00 PM (Closed Mondays)",
+                        ContactPhone = "+91 98250 55667",
+                        Status = DailyHelpListingStatus.Active,
+                        Source = DailyHelpListingSource.SocietyManaged,
+                        VerificationStatus = DailyHelpVerificationStatus.SocietyListed,
+                        LastModifiedByAdminId = primaryAdmin.Id,
                         CreatedAtUtc = now,
                         UpdatedAtUtc = now
                     }

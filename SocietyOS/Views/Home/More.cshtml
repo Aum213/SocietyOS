@@ -30,6 +30,14 @@
                 <span class="badge bg-success rounded-pill">Active</span>
             </a>
 
+            <a asp-controller="DailyHelp" asp-action="Index" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3 px-2">
+                <div>
+                    <div class="fw-bold" style="font-size: 14px;">🧹 Daily Help Directory</div>
+                    <small class="text-muted">Find maids, cooks, drivers, gardeners, and recommend helpers</small>
+                </div>
+                <span class="badge bg-success rounded-pill">Active</span>
+            </a>
+
             <a asp-controller="Amenities" asp-action="Index" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3 px-2">
                 <div>
                     <div class="fw-bold" style="font-size: 14px;">🎾 Book Society Amenities</div>
@@ -81,6 +89,14 @@
                     <span class="badge bg-dark rounded-pill">Admin</span>
                 </a>
 
+                <a asp-controller="DailyHelp" asp-action="Admin" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2 px-2">
+                    <div>
+                        <div class="fw-bold" style="font-size: 13px;">Manage Daily Help & Moderation</div>
+                        <small class="text-muted">Add providers, review resident recommendations, and update gate-pass status</small>
+                    </div>
+                    <span class="badge bg-dark rounded-pill">Admin</span>
+                </a>
+
                 <a asp-controller="Amenities" asp-action="Admin" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2 px-2">
                     <div>
                         <div class="fw-bold" style="font-size: 13px;">Manage Amenities & Reservations</div>
@@ -108,7 +124,7 @@
         </div>
     }
 
-    <!-- 3. Planned Modules (Explicitly Identified) -->
+    <!-- 3. Planned Modules -->
     <div class="bg-white border rounded-4 p-3 shadow-sm mb-3">
         <div class="text-muted fw-bold mb-2 px-1" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">
             Planned Future Phases
@@ -117,10 +133,6 @@
         <div class="list-group list-group-flush" style="font-size: 13px;">
             <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-2 text-muted">
                 <span>🚨 Emergency SOS Alert Routing</span>
-                <span class="badge bg-light text-secondary border">Planned</span>
-            </div>
-            <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-2 text-muted">
-                <span>🧹 Daily Help (Maid, Cook & Driver Attendance)</span>
                 <span class="badge bg-light text-secondary border">Planned</span>
             </div>
             <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-2 text-muted">

@@ -1,0 +1,99 @@
+﻿@model SocietyOS.ViewModels.AdminDailyHelpIndexViewModel
+@using SocietyOS.Models
+@{
+    ViewData["Title"] = "Manage Daily Help Directory";
+}
+
+<div class="home-container" style="max-width: 820px;">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div>
+            <span class="badge bg-dark mb-1" style="font-size: 10px;">ADMINISTRATION</span>
+            <h2 class="m-0 fw-bold" style="font-size: 22px;">Daily Help Directory & Moderation</h2>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill">Resident View</a>
+            <a asp-action="Create" class="btn btn-sm btn-success rounded-pill px-3 fw-bold" style="background: var(--sos-primary);">+ Add Provider</a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success py-2 px-3 mb-3" style="font-size: 13px;">@TempData["SuccessMessage"]</div>
+    }
+
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <a asp-action="Admin" class="btn btn-sm @(!Model.SelectedStatus.HasValue ? "btn-dark" : "btn-outline-secondary") rounded-pill">All</a>
+        <a asp-action="Admin" asp-route-status="@DailyHelpListingStatus.PendingApproval" class="btn btn-sm @(Model.SelectedStatus == DailyHelpListingStatus.PendingApproval ? "btn-warning text-dark" : "btn-outline-warning text-dark") rounded-pill fw-semibold">
+            Pending Recommendations (@Model.PendingCount)
+        </a>
+        <a asp-action="Admin" asp-route-status="@DailyHelpListingStatus.Active" class="btn btn-sm @(Model.SelectedStatus == DailyHelpListingStatus.Active ? "btn-success" : "btn-outline-success") rounded-pill">
+            Active (@Model.ActiveCount)
+        </a>
+        <a asp-action="Admin" asp-route-status="@DailyHelpListingStatus.Inactive" class="btn btn-sm @(Model.SelectedStatus == DailyHelpListingStatus.Inactive ? "btn-secondary" : "btn-outline-secondary") rounded-pill">
+            Inactive / Rejected (@Model.InactiveCount)
+        </a>
+    </div>
+
+    @foreach (var item in Model.Listings)
+    {
+        <div class="bg-white border rounded-4 p-3 mb-2 shadow-sm">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-1">
+                <div>
+                    <span class="badge @(item.Status == DailyHelpListingStatus.Active ? "bg-success" : item.Status == DailyHelpListingStatus.PendingApproval ? "bg-warning text-dark" : "bg-secondary") me-1" style="font-size: 10px;">
+                        @item.Status
+                    </span>
+                    <strong style="font-size: 15px;">@item.ProviderName</strong>
+                    <span class="badge bg-light text-dark border ms-1" style="font-size: 10px;">@item.CategoryDisplay</span>
+                    <span class="badge bg-light text-secondary border ms-1" style="font-size: 10px;">@item.VerificationStatus</span>
+                </div>
+                <small class="text-muted" style="font-size: 11px;">
+                    Source: <strong>@item.RecommenderDisplay</strong>
+                </small>
+            </div>
+
+            <p class="text-muted mb-2" style="font-size: 12px;">@item.ShortDescription</p>
+
+            @if (!string.IsNullOrEmpty(item.AdminInternalNotes))
+            {
+                <div class="p-2 bg-light rounded-2 mb-2" style="font-size: 11px;">
+                    <strong>Internal Admin Note:</strong> @item.AdminInternalNotes
+                </div>
+            }
+
+            <div class="d-flex flex-wrap gap-2 pt-2 border-top">
+                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-dark rounded-pill px-3" style="font-size: 11px;">Edit</a>
+                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary rounded-pill px-3" style="font-size: 11px;">View</a>
+
+                @if (item.Status != DailyHelpListingStatus.Active)
+                {
+                    <form asp-action="ChangeStatus" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@item.Id" />
+                        <input type="hidden" name="newStatus" value="@DailyHelpListingStatus.Active" />
+                        <button type="submit" class="btn btn-sm btn-success rounded-pill px-3" style="font-size: 11px;">Approve & Activate</button>
+                    </form>
+                }
+
+                @if (item.Status == DailyHelpListingStatus.PendingApproval)
+                {
+                    <form asp-action="ChangeStatus" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@item.Id" />
+                        <input type="hidden" name="newStatus" value="@DailyHelpListingStatus.Rejected" />
+                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3" style="font-size: 11px;">Reject</button>
+                    </form>
+                }
+
+                @if (item.Status == DailyHelpListingStatus.Active)
+                {
+                    <form asp-action="ChangeStatus" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@item.Id" />
+                        <input type="hidden" name="newStatus" value="@DailyHelpListingStatus.Inactive" />
+                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3" style="font-size: 11px;">Deactivate</button>
+                    </form>
+                }
+            </div>
+        </div>
+    }
+</div>

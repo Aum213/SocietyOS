@@ -1,0 +1,84 @@
+﻿@model SocietyOS.ViewModels.AdminDailyHelpFormViewModel
+@using SocietyOS.Models
+@using SocietyOS.Controllers
+@{
+    ViewData["Title"] = "Add Daily Help Provider";
+}
+
+<div class="home-container" style="max-width: 600px;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2 class="m-0 fw-bold" style="font-size: 22px;">Add Service Provider</h2>
+        <a asp-action="Admin" class="btn btn-sm btn-outline-secondary rounded-pill">Cancel</a>
+    </div>
+
+    <div class="bg-white border rounded-4 p-4 shadow-sm">
+        <form asp-action="Create" method="post">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2" style="font-size: 13px;"></div>
+
+            <div class="mb-3">
+                <label asp-for="ProviderName" class="form-label fw-bold" style="font-size: 13px;"></label>
+                <input asp-for="ProviderName" class="form-control" />
+                <span asp-validation-for="ProviderName" class="text-danger" style="font-size: 12px;"></span>
+            </div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label asp-for="Category" class="form-label fw-bold" style="font-size: 13px;"></label>
+                    <select asp-for="Category" class="form-select">
+                        @foreach (var cat in Enum.GetValues<DailyHelpCategory>())
+                        {
+                            <option value="@cat">@DailyHelpController.FormatCategoryLabel(cat)</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-6">
+                    <label asp-for="ContactPhone" class="form-label fw-bold" style="font-size: 13px;"></label>
+                    <input asp-for="ContactPhone" class="form-control" placeholder="+91 98765 43210" />
+                    <span asp-validation-for="ContactPhone" class="text-danger" style="font-size: 12px;"></span>
+                </div>
+            </div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label asp-for="ServiceArea" class="form-label fw-bold" style="font-size: 12px;"></label>
+                    <input asp-for="ServiceArea" class="form-control" placeholder="e.g. All Towers (A–D)" />
+                </div>
+                <div class="col-6">
+                    <label asp-for="AvailabilityNotes" class="form-label fw-bold" style="font-size: 12px;"></label>
+                    <input asp-for="AvailabilityNotes" class="form-control" placeholder="e.g. 7 AM – 12 PM" />
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="ExperienceNotes" class="form-label fw-bold" style="font-size: 12px;"></label>
+                <input asp-for="ExperienceNotes" class="form-control" />
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="ShortDescription" class="form-label fw-bold" style="font-size: 13px;"></label>
+                <textarea asp-for="ShortDescription" rows="3" class="form-control"></textarea>
+                <span asp-validation-for="ShortDescription" class="text-danger" style="font-size: 12px;"></span>
+            </div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label asp-for="Status" class="form-label fw-bold" style="font-size: 12px;"></label>
+                    <select asp-for="Status" asp-items="Html.GetEnumSelectList<DailyHelpListingStatus>()" class="form-select"></select>
+                </div>
+                <div class="col-6">
+                    <label asp-for="VerificationStatus" class="form-label fw-bold" style="font-size: 12px;"></label>
+                    <select asp-for="VerificationStatus" asp-items="Html.GetEnumSelectList<DailyHelpVerificationStatus>()" class="form-select"></select>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label asp-for="AdminInternalNotes" class="form-label fw-bold" style="font-size: 12px;"></label>
+                <input asp-for="AdminInternalNotes" class="form-control" placeholder="e.g. Gate Pass #GP-204 verified on 12 Oct" />
+            </div>
+
+            <button type="submit" class="btn btn-success w-100 py-2 fw-bold rounded-pill" style="background: var(--sos-primary);">
+                Create Provider Listing
+            </button>
+        </form>
+    </div>
+</div>
