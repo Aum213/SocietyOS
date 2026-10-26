@@ -1,26 +1,36 @@
 ﻿@model SocietyOS.ViewModels.VisitorConfirmationViewModel
 @{
-    ViewData["Title"] = "Visitor Request Created";
+    ViewData["Title"] = "Visitor Pass Status";
+    var isApproved = string.Equals(Model.Status, "Approved", StringComparison.OrdinalIgnoreCase);
+    var isRejected = string.Equals(Model.Status, "Rejected", StringComparison.OrdinalIgnoreCase);
 }
 
 @section Styles {
     <link rel="stylesheet" href="~/css/societyos-home.css" asp-append-version="true" />
 }
 
-<div class="home-container" style="max-width: 520px; text-align: center; padding-top: 30px;">
-    <div style="width: 64px; height: 64px; border-radius: 50%; background: #eef8f2; color: #1e4d38; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="20 6 9 17 4 12"></polyline>
-        </svg>
+<div class="home-container" style="max-width: 520px; text-align: center; padding-top: 24px;">
+    <div style="width: 64px; height: 64px; border-radius: 50%; background: @(isApproved ? "#dcfce7" : isRejected ? "#fee2e2" : "#fef3c7"); color: @(isApproved ? "#15803d" : isRejected ? "#b91c1c" : "#b45309"); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 14px; font-size: 28px; font-weight: 700;">
+        @(isApproved ? "✓" : isRejected ? "✕" : "⏳")
     </div>
 
-    <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 6px;">Request Dispatched</h2>
-    <p class="text-muted" style="font-size: 14px; margin-bottom: 24px;">The resident has received the approval prompt on their SocietyOS app.</p>
+    <h2 style="font-size: 23px; font-weight: 700; margin-bottom: 6px;">
+        @(isApproved ? "Entry Approved by Resident" : isRejected ? "Entry Rejected by Resident" : "Awaiting Resident Decision")
+    </h2>
+    <p class="text-muted" style="font-size: 13px; margin-bottom: 20px;">
+        @(isApproved
+            ? "The resident of Flat " + Model.FlatDisplay + " has approved this visitor. You may permit entry."
+            : isRejected
+                ? "The resident of Flat " + Model.FlatDisplay + " has DENIED this visitor. Do NOT permit entry."
+                : "This page updates automatically when the resident approves or rejects the request.")
+    </p>
 
-    <div style="background: #ffffff; border: 1px solid var(--sos-border); border-radius: var(--sos-radius-lg); padding: 20px; text-align: left; box-shadow: var(--sos-shadow-card); margin-bottom: 24px;">
+    <div style="background: #ffffff; border: 2px solid @(isApproved ? "#16a34a" : isRejected ? "#dc2626" : "var(--sos-border)"); border-radius: var(--sos-radius-lg); padding: 20px; text-align: left; box-shadow: var(--sos-shadow-card); margin-bottom: 20px;">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <span class="text-muted" style="font-size: 12px; font-weight: 600;">PASS REFERENCE</span>
-            <span class="badge bg-warning text-dark px-2 py-1" style="font-size: 12px;">Pending Approval</span>
+            <span class="text-muted" style="font-size: 12px; font-weight: 600;">PASS #VR-@Model.RequestId</span>
+            <span class="badge @(isApproved ? "bg-success" : isRejected ? "bg-danger" : "bg-warning text-dark") px-3 py-2" style="font-size: 12px;">
+                @(isApproved ? "✓ APPROVED" : isRejected ? "✕ REJECTED" : "⏳ PENDING APPROVAL")
+            </span>
         </div>
 
         <div style="font-size: 18px; font-weight: 700; color: var(--sos-primary); margin-bottom: 12px;">
@@ -41,18 +51,18 @@
                 <strong>@(Model.AccompanyingPersons == 0 ? "Solo Visitor" : $"+{Model.AccompanyingPersons} Persons")</strong>
             </div>
             <div class="col-6 mt-2">
-                <span class="text-muted d-block" style="font-size: 11px;">AUTO-PURGE EXPIRES</span>
-                <strong>@Model.ExpiresAtUtc.ToString("dd MMM, HH:mm") UTC</strong>
+                <span class="text-muted d-block" style="font-size: 11px;">@(Model.DecisionAtUtc.HasValue ? "DECIDED AT" : "AUTO-PURGE EXPIRES")</span>
+                <strong>@((Model.DecisionAtUtc ?? Model.ExpiresAtUtc).ToString("dd MMM, HH:mm")) UTC</strong>
             </div>
         </div>
     </div>
 
     <div class="d-flex gap-2">
         <a asp-action="Register" class="btn btn-success flex-grow-1 py-2 fw-bold" style="border-radius: var(--sos-radius-full); background: var(--sos-primary); border-color: var(--sos-primary);">
-            Register Next Visitor
+            Register / Gate Queue
         </a>
-        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary py-2" style="border-radius: var(--sos-radius-full);">
-            Home
+        <a asp-action="Confirmation" asp-route-id="@Model.RequestId" class="btn btn-outline-dark py-2 px-3" style="border-radius: var(--sos-radius-full);">
+            ↻ Refresh Status
         </a>
     </div>
 </div>

@@ -6,8 +6,11 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using SocietyOS.Data;
+using SocietyOS.Hubs;
 using SocietyOS.Models;
 using SocietyOS.Services;
 using SocietyOS.ViewModels;
@@ -19,16 +22,21 @@ namespace SocietyOS.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly IVisitorPhotoStorageService _photoStorage;
+        private readonly IHubContext<EmergencySosHub> _sosHub;
+        private readonly ILogger<VisitorsController> _logger;
 
-        public VisitorsController(ApplicationDbContext context, IVisitorPhotoStorageService photoStorage)
+        public VisitorsController(
+            ApplicationDbContext context,
+            IVisitorPhotoStorageService photoStorage,
+            IHubContext<EmergencySosHub> sosHub,
+            ILogger<VisitorsController> logger)
         {
             _context = context;
             _photoStorage = photoStorage;
+            _sosHub = sosHub;
+            _logger = logger;
         }
 
-        // ==================================================================
-        // Helper: Resolve authenticated user's verified flat association
-        // ==================================================================
         private async Task<ResidentProfile?> GetVerifiedResidentProfileAsync()
         {
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -54,11 +62,8 @@ namespace SocietyOS.Controllers
             return RedirectToAction(nameof(Pending));
         }
 
-
         // ==================================================================
-        // GET: /Visitors/Pending
-        // GET: /Visitors/Approved
-        // GET: /Visitors/Rejected
+        // GET: /Visitors/Pending, /Approved, /Rejected
         // ==================================================================
         [Authorize(Roles = "Resident,Administrator")]
         [HttpGet]
@@ -82,7 +87,6 @@ namespace SocietyOS.Controllers
 
             var nowUtc = DateTime.UtcNow;
 
-            // Base query scoped strictly to the resident's verified flat and unexpired records
             var baseQuery = _context.VisitorRequests
                 .Where(v => v.FlatId == resident.FlatId && v.ExpiresAtUtc > nowUtc);
 
@@ -174,7 +178,7 @@ namespace SocietyOS.Controllers
         }
 
         // ==================================================================
-        // POST: /Visitors/Decide (Atomic Approval / Rejection)
+        // POST: /Visitors/Decide (Atomic Decision + Post-Commit Guard Alert)
         // ==================================================================
         [Authorize(Roles = "Resident,Administrator")]
         [HttpPost]
@@ -222,6 +226,33 @@ namespace SocietyOS.Controllers
             try
             {
                 await _context.SaveChangesAsync();
+
+                // Broadcast real-time decision alert to connected Security Guards ONLY after DB persistence succeeds
+                try
+                {
+                    var flatDisplay = $"{resident.Flat.Building.Code}-{resident.Flat.FlatNumber}";
+                    await _sosHub.Clients.Group(EmergencySosHub.GuardsGroupName).SendAsync(
+                        "VisitorDecisionRecorded",
+                        new
+                        {
+                            requestId = req.Id,
+                            visitorName = req.VisitorName,
+                            flatDisplay = flatDisplay,
+                            buildingName = resident.Flat.Building.Name,
+                            purpose = req.Purpose,
+                            status = targetStatus.ToString(),
+                            isApproved = targetStatus == VisitorStatus.Approved,
+                            decidedAtDisplay = nowUtc.ToString("dd MMM, HH:mm:ss") + " UTC",
+                            confirmationUrl = Url.Action(nameof(Confirmation), "Visitors", new { id = req.Id }),
+                            registerQueueUrl = Url.Action(nameof(Register), "Visitors")
+                        });
+                }
+                catch (Exception ex)
+                {
+                    // Never fail or rollback a persisted visitor decision if SignalR broadcast fails
+                    _logger.LogWarning(ex, "Failed to broadcast real-time visitor decision alert for request {RequestId}.", req.Id);
+                }
+
                 TempData["SuccessMessage"] = targetStatus == VisitorStatus.Approved
                     ? $"Visitor {req.VisitorName} was approved for entry."
                     : $"Visitor {req.VisitorName} was denied entry.";
@@ -239,7 +270,7 @@ namespace SocietyOS.Controllers
         }
 
         // ==================================================================
-        // GET: /Visitors/Register (Guard Intake)
+        // GET: /Visitors/Register (Guard Intake + Live Gate Queue)
         // ==================================================================
         [Authorize(Roles = "SecurityGuard,Administrator")]
         [HttpGet]
@@ -319,16 +350,18 @@ namespace SocietyOS.Controllers
         }
 
         // ==================================================================
-        // GET: /Visitors/Confirmation/{id} (Live Status for Guards)
+        // GET: /Visitors/Confirmation/{id} (Live Status Pass for Guards)
         // ==================================================================
         [Authorize(Roles = "SecurityGuard,Administrator")]
         [HttpGet]
         public async Task<IActionResult> Confirmation(int id)
         {
+            var nowUtc = DateTime.UtcNow;
             var req = await _context.VisitorRequests
+                .AsNoTracking()
                 .Include(v => v.Flat)
                     .ThenInclude(f => f.Building)
-                .FirstOrDefaultAsync(v => v.Id == id);
+                .FirstOrDefaultAsync(v => v.Id == id && v.ExpiresAtUtc > nowUtc);
 
             if (req == null) return NotFound();
 
@@ -340,16 +373,17 @@ namespace SocietyOS.Controllers
                 BuildingName = req.Flat.Building.Name,
                 Purpose = req.Purpose,
                 AccompanyingPersons = req.AccompanyingPersons,
-                Status = req.Status.ToString(), // Fetches live decision status from database
+                Status = req.Status.ToString(),
                 CreatedAtUtc = req.CreatedAtUtc,
-                ExpiresAtUtc = req.ExpiresAtUtc
+                ExpiresAtUtc = req.ExpiresAtUtc,
+                DecisionAtUtc = req.DecisionAtUtc
             };
 
             return View(viewModel);
         }
 
         // ==================================================================
-        // GET: /Visitors/Photo/{id} (Protected Photo Streaming)
+        // GET: /Visitors/Photo/{id}
         // ==================================================================
         [HttpGet]
         public async Task<IActionResult> Photo(int id)
@@ -426,6 +460,26 @@ namespace SocietyOS.Controllers
                 Value = f.Id.ToString(),
                 Text = $"Flat {f.FlatNumber} (Floor {f.Floor})"
             }).ToList();
+
+            var nowUtc = DateTime.UtcNow;
+            model.RecentGateRequests = await _context.VisitorRequests
+                .AsNoTracking()
+                .Where(v => v.ExpiresAtUtc > nowUtc)
+                .Include(v => v.Flat)
+                    .ThenInclude(f => f.Building)
+                .OrderByDescending(v => v.CreatedAtUtc)
+                .Take(15)
+                .Select(v => new GuardGateRequestItemViewModel
+                {
+                    Id = v.Id,
+                    VisitorName = v.VisitorName,
+                    FlatDisplay = $"{v.Flat.Building.Code}-{v.Flat.FlatNumber}",
+                    Purpose = v.Purpose,
+                    Status = v.Status,
+                    CreatedAtUtc = v.CreatedAtUtc,
+                    DecisionAtUtc = v.DecisionAtUtc
+                })
+                .ToListAsync();
         }
     }
 }

@@ -1,7 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using SocietyOS.Models;
 
 namespace SocietyOS.ViewModels
 {
@@ -38,6 +40,20 @@ namespace SocietyOS.ViewModels
 
         public List<SelectListItem> Buildings { get; set; } = new();
         public List<SelectListItem> Flats { get; set; } = new();
+
+        // Live database-backed queue of recent unexpired gate requests for the guard screen
+        public List<GuardGateRequestItemViewModel> RecentGateRequests { get; set; } = new();
+    }
+
+    public class GuardGateRequestItemViewModel
+    {
+        public int Id { get; set; }
+        public string VisitorName { get; set; } = string.Empty;
+        public string FlatDisplay { get; set; } = string.Empty;
+        public string Purpose { get; set; } = string.Empty;
+        public VisitorStatus Status { get; set; }
+        public DateTime CreatedAtUtc { get; set; }
+        public DateTime? DecisionAtUtc { get; set; }
     }
 
     public class VisitorConfirmationViewModel
@@ -51,5 +67,6 @@ namespace SocietyOS.ViewModels
         public string Status { get; set; } = "Pending";
         public DateTime CreatedAtUtc { get; set; }
         public DateTime ExpiresAtUtc { get; set; }
+        public DateTime? DecisionAtUtc { get; set; }
     }
 }

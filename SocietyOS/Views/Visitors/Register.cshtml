@@ -1,4 +1,5 @@
 ﻿@model SocietyOS.ViewModels.RegisterVisitorViewModel
+@using SocietyOS.Models
 @{
     ViewData["Title"] = "Gate Pass — Register Arriving Visitor";
 }
@@ -37,32 +38,29 @@
     </style>
 }
 
-<div class="home-container" style="max-width: 580px;">
+<div class="home-container" style="max-width: 620px;">
     <div class="d-flex align-items-center justify-content-between mb-3">
         <div>
             <span class="badge bg-success mb-1" style="font-size: 11px;">SECURITY GATE PASS</span>
             <h2 class="m-0" style="font-size: 22px; font-weight: 700;">Register Visitor</h2>
         </div>
         <a asp-controller="Home" asp-action="Index" class="btn btn-sm btn-outline-secondary" style="border-radius: var(--sos-radius-full);">
-            Exit
+            Home
         </a>
     </div>
 
-    <div class="form-card">
+    <div class="form-card mb-4">
         <form asp-action="Register" method="post" enctype="multipart/form-data">
             <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2" style="font-size: 13px;" role="alert"></div>
 
-            <!-- 1. Visitor Full Name -->
             <div class="mb-3">
                 <label asp-for="VisitorName" class="form-label fw-bold" style="font-size: 13px;"></label>
                 <input asp-for="VisitorName" class="form-control" placeholder="e.g. Ramesh Patel" style="border-radius: var(--sos-radius-sm);" />
                 <span asp-validation-for="VisitorName" class="text-danger" style="font-size: 12px;"></span>
             </div>
 
-            <!-- 2. Camera Photo Capture -->
             <div class="mb-3">
                 <label asp-for="Photo" class="form-label fw-bold" style="font-size: 13px;">Visitor Photo (Camera or File)</label>
-                <!-- capture="environment" invokes rear camera on mobile devices -->
                 <input asp-for="Photo" type="file" class="form-control" accept="image/*" capture="environment" id="photoInput" style="border-radius: var(--sos-radius-sm);" />
                 <span asp-validation-for="Photo" class="text-danger" style="font-size: 12px;"></span>
 
@@ -72,7 +70,6 @@
                 </div>
             </div>
 
-            <!-- 3. Destination Building & Flat -->
             <div class="row g-2 mb-3">
                 <div class="col-6">
                     <label asp-for="BuildingId" class="form-label fw-bold" style="font-size: 13px;"></label>
@@ -84,7 +81,6 @@
                 </div>
             </div>
 
-            <!-- 4. Visit Purpose & Accompanying Persons -->
             <div class="row g-2 mb-3">
                 <div class="col-7">
                     <label asp-for="Purpose" class="form-label fw-bold" style="font-size: 13px;"></label>
@@ -102,14 +98,9 @@
                 </div>
             </div>
 
-            <!-- 5. Additional Note -->
             <div class="mb-4">
                 <label asp-for="PurposeDetails" class="form-label fw-bold" style="font-size: 13px;"></label>
                 <input asp-for="PurposeDetails" class="form-control" placeholder="e.g. Swiggy delivery, Carpenter" style="border-radius: var(--sos-radius-sm);" />
-            </div>
-
-            <div class="p-2 mb-4 bg-light rounded" style="font-size: 11px; color: var(--sos-text-secondary);">
-                <strong>Privacy Policy Notice:</strong> Visitor photo and records are encrypted and automatically deleted within 48 hours.
             </div>
 
             <button type="submit" class="btn btn-success w-100 py-2 fw-bold" style="border-radius: var(--sos-radius-full); background: var(--sos-primary); border-color: var(--sos-primary);">
@@ -117,12 +108,62 @@
             </button>
         </form>
     </div>
+
+    <!-- Live Gate Queue & Resident Decisions -->
+    <section aria-label="Recent Gate Requests and Resident Decisions" class="mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <h5 class="fw-bold m-0" style="font-size: 16px;">Recent Gate Requests & Decisions</h5>
+            <a asp-action="Register" class="btn btn-sm btn-outline-secondary rounded-pill" style="font-size: 11px;">↻ Refresh</a>
+        </div>
+
+        @if (!Model.RecentGateRequests.Any())
+        {
+            <div class="bg-white border rounded-4 p-4 text-center text-muted" style="font-size: 13px;">
+                No active visitor requests in the last 48 hours.
+            </div>
+        }
+        else
+        {
+            @foreach (var item in Model.RecentGateRequests)
+            {
+                <div class="bg-white border rounded-4 p-3 mb-2 shadow-sm d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            @if (item.Status == VisitorStatus.Approved)
+                            {
+                                <span class="badge bg-success rounded-pill" style="font-size: 11px;">✓ APPROVED</span>
+                            }
+                            else if (item.Status == VisitorStatus.Rejected)
+                            {
+                                <span class="badge bg-danger rounded-pill" style="font-size: 11px;">✕ REJECTED</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark rounded-pill" style="font-size: 11px;">⏳ PENDING</span>
+                            }
+                            <strong style="font-size: 14px;">@item.VisitorName</strong>
+                            <span class="badge bg-light text-dark border">Flat @item.FlatDisplay</span>
+                        </div>
+                        <div class="text-muted" style="font-size: 11px;">
+                            @item.Purpose • Logged @item.CreatedAtUtc.ToString("dd MMM, HH:mm") UTC
+                            @if (item.DecisionAtUtc.HasValue)
+                            {
+                                <span> • Decided @item.DecisionAtUtc.Value.ToString("HH:mm") UTC</span>
+                            }
+                        </div>
+                    </div>
+                    <a asp-action="Confirmation" asp-route-id="@item.Id" class="btn btn-sm btn-outline-dark rounded-pill px-3" style="font-size: 11px;">
+                        Pass Status →
+                    </a>
+                </div>
+            }
+        }
+    </section>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
-        // Photo live preview
         const photoInput = document.getElementById('photoInput');
         const imagePreview = document.getElementById('imagePreview');
         const placeholder = document.getElementById('previewPlaceholder');
@@ -140,7 +181,6 @@
             }
         });
 
-        // Dynamic Flat selector on Building change
         const buildingSelect = document.getElementById('buildingSelect');
         const flatSelect = document.getElementById('flatSelect');
 

@@ -13,7 +13,7 @@ using SocietyOS.ViewModels;
 
 namespace SocietyOS.Controllers
 {
-    [Authorize(Roles = "Resident,Administrator")]
+    [Authorize(Roles = "Resident,Administrator,SecurityGuard")]
     public class AnnouncementsController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -37,7 +37,7 @@ namespace SocietyOS.Controllers
         }
 
         // ==================================================================
-        // GET: /Announcements (Resident Notice Board Feed)
+        // GET: /Announcements (Resident & Security Guard Notice Board Feed)
         // ==================================================================
         [HttpGet]
         public async Task<IActionResult> Index(
@@ -47,7 +47,9 @@ namespace SocietyOS.Controllers
             CancellationToken ct = default)
         {
             var isAdmin = User.IsInRole("Administrator");
-            if (!isAdmin)
+            var isGuard = User.IsInRole("SecurityGuard");
+
+            if (!isAdmin && !isGuard)
             {
                 var resident = await GetVerifiedResidentProfileAsync(ct);
                 if (resident == null)
@@ -66,7 +68,6 @@ namespace SocietyOS.Controllers
                 .Where(a => a.State == AnnouncementState.Published &&
                             (!a.ExpiresAtUtc.HasValue || a.ExpiresAtUtc.Value > nowUtc));
 
-            // Calculate total unread count across all eligible published announcements for this user
             var unreadCount = await eligibleQuery
                 .CountAsync(a => !a.Reads.Any(r => r.UserId == currentUserId), ct);
 
@@ -85,7 +86,6 @@ namespace SocietyOS.Controllers
             var totalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)PageSize));
             page = Math.Min(page, totalPages);
 
-            // Intentional sort order: Pinned first -> Priority (Urgent > Important > Normal) -> PublishedAtUtc newest first
             var items = await filteredQuery
                 .OrderByDescending(a => a.IsPinned)
                 .ThenByDescending(a => a.Priority)
@@ -132,9 +132,10 @@ namespace SocietyOS.Controllers
         public async Task<IActionResult> Details(int id, CancellationToken ct = default)
         {
             var isAdmin = User.IsInRole("Administrator");
+            var isGuard = User.IsInRole("SecurityGuard");
             ResidentProfile? resident = null;
 
-            if (!isAdmin)
+            if (!isAdmin && !isGuard)
             {
                 resident = await GetVerifiedResidentProfileAsync(ct);
                 if (resident == null)
@@ -152,11 +153,11 @@ namespace SocietyOS.Controllers
 
             if (announcement == null) return NotFound();
 
-            var isEligibleForResident = announcement.State == AnnouncementState.Published &&
-                                        (!announcement.ExpiresAtUtc.HasValue || announcement.ExpiresAtUtc.Value > nowUtc);
+            var isEligibleForReader = announcement.State == AnnouncementState.Published &&
+                                      (!announcement.ExpiresAtUtc.HasValue || announcement.ExpiresAtUtc.Value > nowUtc);
 
-            // Non-admin residents cannot access drafts, archived items, or expired notices by guessing IDs
-            if (!isAdmin && !isEligibleForResident)
+            // Non-admin readers (Residents and Security Guards) cannot access drafts, archived items, or expired notices
+            if (!isAdmin && !isEligibleForReader)
             {
                 return NotFound();
             }
@@ -166,8 +167,7 @@ namespace SocietyOS.Controllers
                 .AsNoTracking()
                 .FirstOrDefaultAsync(r => r.AnnouncementId == id && r.UserId == currentUserId, ct);
 
-            // Mark as read ONLY when an eligible published announcement is viewed (never on admin draft previews)
-            if (existingRead == null && isEligibleForResident && (resident != null || isAdmin))
+            if (existingRead == null && isEligibleForReader && (resident != null || isGuard || isAdmin))
             {
                 try
                 {
@@ -183,7 +183,6 @@ namespace SocietyOS.Controllers
                 }
                 catch (DbUpdateException ex)
                 {
-                    // Idempotent race-condition safety if opened simultaneously in two tabs
                     _logger.LogDebug(ex, "Concurrent read receipt already recorded for announcement {Id}.", id);
                     existingRead = await _context.AnnouncementReads
                         .AsNoTracking()
@@ -221,7 +220,7 @@ namespace SocietyOS.Controllers
         }
 
         // ==================================================================
-        // GET: /Announcements/Admin (Administrator Management Console)
+        // GET: /Announcements/Admin (Administrator Only)
         // ==================================================================
         [Authorize(Roles = "Administrator")]
         [HttpGet]
@@ -292,7 +291,7 @@ namespace SocietyOS.Controllers
         }
 
         // ==================================================================
-        // GET & POST: /Announcements/Create
+        // GET & POST: /Announcements/Create (Administrator Only)
         // ==================================================================
         [Authorize(Roles = "Administrator")]
         [HttpGet]
@@ -347,7 +346,7 @@ namespace SocietyOS.Controllers
         }
 
         // ==================================================================
-        // GET & POST: /Announcements/Edit/{id}
+        // GET & POST: /Announcements/Edit/{id} (Administrator Only)
         // ==================================================================
         [Authorize(Roles = "Administrator")]
         [HttpGet]
@@ -403,7 +402,6 @@ namespace SocietyOS.Controllers
             announcement.LastEditedByAdminId = adminId;
             announcement.UpdatedAtUtc = nowUtc;
 
-            // Support optional "Save & Publish" from Edit view if currently a Draft
             if (announcement.State == AnnouncementState.Draft &&
                 string.Equals(model.SubmitAction, "Publish", StringComparison.OrdinalIgnoreCase))
             {
@@ -425,7 +423,7 @@ namespace SocietyOS.Controllers
         }
 
         // ==================================================================
-        // POST: /Announcements/ChangeState (Publish, Unpublish, Archive, Restore)
+        // POST: /Announcements/ChangeState (Administrator Only)
         // ==================================================================
         [Authorize(Roles = "Administrator")]
         [HttpPost]
@@ -488,7 +486,7 @@ namespace SocietyOS.Controllers
         }
 
         // ==================================================================
-        // POST: /Announcements/TogglePin
+        // POST: /Announcements/TogglePin (Administrator Only)
         // ==================================================================
         [Authorize(Roles = "Administrator")]
         [HttpPost]

@@ -49,11 +49,11 @@
 
     @if (User.Identity?.IsAuthenticated == true && User.IsInRole("SecurityGuard"))
     {
-        <!-- Non-blocking Real-Time Emergency SOS Banner for Connected Security Guards -->
+        <!-- 1. Real-Time Emergency SOS Banner for Connected Security Guards -->
         <div id="guardRealtimeSosBanner"
              role="alert"
              aria-live="assertive"
-             style="display: none; position: sticky; top: 0; z-index: 1080; background: #991b1b; color: #ffffff; padding: 12px 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.25);">
+             style="display: none; position: sticky; top: 0; z-index: 1085; background: #991b1b; color: #ffffff; padding: 12px 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.25);">
             <div class="container-fluid d-flex flex-wrap align-items-center justify-content-between gap-2" style="max-width: 720px; margin: 0 auto;">
                 <div style="font-size: 13px;">
                     <span class="badge bg-warning text-dark fw-bold me-1">🚨 NEW EMERGENCY SOS</span>
@@ -66,6 +66,27 @@
                     <a href="/Emergency/Queue" class="btn btn-sm btn-outline-light rounded-pill px-3" style="font-size: 12px;">
                         Queue
                     </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Real-Time Visitor Approval (Green) / Rejection (Red) Banner for Connected Security Guards -->
+        <div id="guardVisitorDecisionBanner"
+             role="status"
+             aria-live="polite"
+             style="display: none; position: sticky; top: 0; z-index: 1080; color: #ffffff; padding: 12px 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+            <div class="container-fluid d-flex flex-wrap align-items-center justify-content-between gap-2" style="max-width: 720px; margin: 0 auto;">
+                <div style="font-size: 13px;">
+                    <span id="visitorDecisionBadge" class="badge bg-light text-dark fw-bold me-1">GATE DECISION</span>
+                    <strong id="visitorDecisionSummaryText">Visitor decision updated.</strong>
+                </div>
+                <div class="d-flex gap-2">
+                    <a id="visitorDecisionPassLink" href="/Visitors/Register" class="btn btn-sm btn-light fw-bold rounded-pill px-3" style="font-size: 12px;">
+                        View Gate Pass →
+                    </a>
+                    <button type="button" id="closeVisitorBannerBtn" class="btn btn-sm btn-outline-light rounded-pill px-2" style="font-size: 12px;" aria-label="Dismiss notification">
+                        ✕
+                    </button>
                 </div>
             </div>
         </div>
@@ -94,42 +115,72 @@
     {
         <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js" crossorigin="anonymous"></script>
         <script>
-                (function () {
-                    if (typeof signalR === "undefined" || window.__sosGuardHubInitialized) return;
-                    window.__sosGuardHubInitialized = true;
+            (function () {
+                if (typeof signalR === "undefined" || window.__sosGuardHubInitialized) return;
+                window.__sosGuardHubInitialized = true;
 
-                    const banner = document.getElementById("guardRealtimeSosBanner");
-                    const summaryEl = document.getElementById("sosAlertSummaryText");
-                    const detailsLink = document.getElementById("sosAlertDetailsLink");
+                const sosBanner = document.getElementById("guardRealtimeSosBanner");
+                const sosSummaryEl = document.getElementById("sosAlertSummaryText");
+                const sosDetailsLink = document.getElementById("sosAlertDetailsLink");
 
-                    const connection = new signalR.HubConnectionBuilder()
-                        .withUrl("/hubs/emergency-sos")
-                        .withAutomaticReconnect()
-                        .build();
+                const visitorBanner = document.getElementById("guardVisitorDecisionBanner");
+                const visitorBadge = document.getElementById("visitorDecisionBadge");
+                const visitorSummaryEl = document.getElementById("visitorDecisionSummaryText");
+                const visitorPassLink = document.getElementById("visitorDecisionPassLink");
+                const closeVisitorBannerBtn = document.getElementById("closeVisitorBannerBtn");
 
-                    connection.on("NewSosIncident", function (payload) {
-                        if (banner && summaryEl && detailsLink && payload) {
-                            summaryEl.textContent = `${payload.referenceCode}: ${payload.categoryDisplay} at Flat ${payload.flatDisplay} (${payload.createdAtLocalDisplay})`;
-                            detailsLink.setAttribute("href", payload.detailsUrl || "/Emergency/Queue");
-                            banner.style.display = "block";
-                        }
+                closeVisitorBannerBtn?.addEventListener("click", function () {
+                    if (visitorBanner) visitorBanner.style.display = "none";
+                });
 
-                        // If the guard currently has /Emergency/Queue open, refresh the authoritative list
-                        if (window.location.pathname.toLowerCase().startsWith("/emergency/queue")) {
-                            setTimeout(function () { window.location.reload(); }, 1200);
-                        }
-                    });
+                const connection = new signalR.HubConnectionBuilder()
+                    .withUrl("/hubs/emergency-sos")
+                    .withAutomaticReconnect()
+                    .build();
 
-                    connection.onreconnected(function () {
-                        if (window.location.pathname.toLowerCase().startsWith("/emergency/queue")) {
-                            window.location.reload();
-                        }
-                    });
+                // 1. Emergency SOS Event Handler
+                connection.on("NewSosIncident", function (payload) {
+                    if (sosBanner && sosSummaryEl && sosDetailsLink && payload) {
+                        sosSummaryEl.textContent = `${payload.referenceCode}: ${payload.categoryDisplay} at Flat ${payload.flatDisplay} (${payload.createdAtLocalDisplay})`;
+                        sosDetailsLink.setAttribute("href", payload.detailsUrl || "/Emergency/Queue");
+                        sosBanner.style.display = "block";
+                    }
 
-                    connection.start().catch(function () {
-                        // Responder queue continues to work via standard server rendering if WebSocket/SignalR is unavailable
-                    });
-                })();
+                    if (window.location.pathname.toLowerCase().startsWith("/emergency/queue")) {
+                        setTimeout(function () { window.location.reload(); }, 1200);
+                    }
+                });
+
+                // 2. Visitor Approval (Green) / Rejection (Red) Event Handler
+                connection.on("VisitorDecisionRecorded", function (payload) {
+                    if (visitorBanner && visitorBadge && visitorSummaryEl && visitorPassLink && payload) {
+                        const isApproved = payload.isApproved === true;
+                        visitorBanner.style.backgroundColor = isApproved ? "#15803d" : "#b91c1c";
+                        visitorBadge.textContent = isApproved ? "✓ VISITOR APPROVED" : "✕ VISITOR REJECTED";
+                        visitorSummaryEl.textContent = isApproved
+                            ? `${payload.visitorName} (Flat ${payload.flatDisplay}) was APPROVED for entry by the resident.`
+                            : `${payload.visitorName} (Flat ${payload.flatDisplay}) was REJECTED by the resident. Do NOT permit entry.`;
+                        visitorPassLink.setAttribute("href", payload.confirmationUrl || "/Visitors/Register");
+                        visitorBanner.style.display = "block";
+                    }
+
+                    const path = window.location.pathname.toLowerCase();
+                    if (path.startsWith("/visitors/confirmation") || path.startsWith("/visitors/details")) {
+                        setTimeout(function () { window.location.reload(); }, 1500);
+                    }
+                });
+
+                connection.onreconnected(function () {
+                    const path = window.location.pathname.toLowerCase();
+                    if (path.startsWith("/emergency/queue") || path.startsWith("/visitors/confirmation")) {
+                        window.location.reload();
+                    }
+                });
+
+                connection.start().catch(function () {
+                    // Standard server-rendered queues remain authoritative if WebSocket connection is unavailable
+                });
+            })();
         </script>
     }
 
